@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage generated="1780696306710" clover="3.2.0">
+  <project timestamp="1780696306711" name="All files">
+    <metrics statements="137" coveredstatements="136" conditionals="61" coveredconditionals="51" methods="72" coveredmethods="72" elements="270" coveredelements="259" complexity="0" loc="137" ncloc="137" packages="1" files="3" classes="3"/>
+    <file name="client.ts" path="/home/martiel/Documentos/GitHub/sascar-sdk/src/client.ts">
+      <metrics statements="111" coveredstatements="110" conditionals="59" coveredconditionals="49" methods="65" coveredmethods="65"/>
+      <line num="1" count="1" type="stmt"/>
+      <line num="2" count="1" type="stmt"/>
+      <line num="3" count="1" type="stmt"/>
+      <line num="6" count="1" type="stmt"/>
+      <line num="9" count="9" type="stmt"/>
+      <line num="10" count="9" type="stmt"/>
+      <line num="11" count="9" type="stmt"/>
+      <line num="14" count="9" type="cond" truecount="3" falsecount="0"/>
+      <line num="15" count="9" type="cond" truecount="3" falsecount="0"/>
+      <line num="17" count="9" type="cond" truecount="3" falsecount="0"/>
+      <line num="18" count="1" type="stmt"/>
+      <line num="23" count="66" type="stmt"/>
+      <line num="29" count="66" type="stmt"/>
+      <line num="44" count="66" type="stmt"/>
+      <line num="48" count="66" type="stmt"/>
+      <line num="50" count="66" type="stmt"/>
+      <line num="52" count="66" type="stmt"/>
+      <line num="53" count="66" type="stmt"/>
+      <line num="62" count="1" type="stmt"/>
+      <line num="65" count="65" type="stmt"/>
+      <line num="66" count="65" type="stmt"/>
+      <line num="68" count="65" type="cond" truecount="1" falsecount="0"/>
+      <line num="69" count="1" type="stmt"/>
+      <line num="72" count="64" type="stmt"/>
+      <line num="73" count="64" type="cond" truecount="1" falsecount="0"/>
+      <line num="74" count="1" type="stmt"/>
+      <line num="77" count="63" type="stmt"/>
+      <line num="79" count="63" type="cond" truecount="1" falsecount="0"/>
+      <line num="82" count="61" type="stmt"/>
+      <line num="83" count="63" type="cond" truecount="3" falsecount="1"/>
+      <line num="84" count="15" type="stmt"/>
+      <line num="85" count="15" type="stmt"/>
+      <line num="88" count="49" type="stmt"/>
+      <line num="91" count="61" type="cond" truecount="2" falsecount="0"/>
+      <line num="92" count="2" type="stmt"/>
+      <line num="94" count="59" type="stmt"/>
+      <line num="98" count="61" type="stmt"/>
+      <line num="101" count="66" type="cond" truecount="1" falsecount="0"/>
+      <line num="102" count="19" type="stmt"/>
+      <line num="104" count="47" type="stmt"/>
+      <line num="110" count="1" type="stmt"/>
+      <line num="114" count="1" type="stmt"/>
+      <line num="118" count="1" type="stmt"/>
+      <line num="122" count="1" type="stmt"/>
+      <line num="126" count="1" type="stmt"/>
+      <line num="130" count="2" type="stmt"/>
+      <line num="134" count="1" type="stmt"/>
+      <line num="138" count="4" type="stmt"/>
+      <line num="139" count="4" type="stmt"/>
+      <line num="141" count="4" type="stmt"/>
+      <line num="142" count="6" type="stmt"/>
+      <line num="147" count="3" type="cond" truecount="1" falsecount="3"/>
+      <line num="149" count="3" type="cond" truecount="3" falsecount="0"/>
+      <line num="150" count="1" type="stmt"/>
+      <line num="153" count="2" type="stmt"/>
+      <line num="155" count="2" type="cond" truecount="0" falsecount="1"/>
+      <line num="156" count="0" type="stmt"/>
+      <line num="159" count="2" type="stmt"/>
+      <line num="162" count="1" type="stmt"/>
+      <line num="166" count="1" type="stmt"/>
+      <line num="170" count="1" type="stmt"/>
+      <line num="174" count="1" type="stmt"/>
+      <line num="178" count="1" type="stmt"/>
+      <line num="182" count="1" type="stmt"/>
+      <line num="186" count="1" type="stmt"/>
+      <line num="190" count="1" type="stmt"/>
+      <line num="194" count="1" type="stmt"/>
+      <line num="198" count="1" type="stmt"/>
+      <line num="202" count="1" type="stmt"/>
+      <line num="208" count="1" type="stmt"/>
+      <line num="212" count="1" type="stmt"/>
+      <line num="216" count="1" type="stmt"/>
+      <line num="220" count="1" type="stmt"/>
+      <line num="224" count="1" type="stmt"/>
+      <line num="228" count="1" type="stmt"/>
+      <line num="232" count="1" type="stmt"/>
+      <line num="236" count="1" type="stmt"/>
+      <line num="240" count="1" type="stmt"/>
+      <line num="244" count="1" type="stmt"/>
+      <line num="248" count="1" type="stmt"/>
+      <line num="252" count="1" type="stmt"/>
+      <line num="256" count="1" type="stmt"/>
+      <line num="262" count="1" type="stmt"/>
+      <line num="266" count="1" type="stmt"/>
+      <line num="270" count="1" type="stmt"/>
+      <line num="274" count="1" type="stmt"/>
+      <line num="278" count="1" type="stmt"/>
+      <line num="282" count="1" type="stmt"/>
+      <line num="286" count="1" type="stmt"/>
+      <line num="290" count="1" type="stmt"/>
+      <line num="294" count="1" type="stmt"/>
+      <line num="298" count="1" type="stmt"/>
+      <line num="302" count="1" type="stmt"/>
+      <line num="306" count="1" type="stmt"/>
+      <line num="310" count="1" type="stmt"/>
+      <line num="314" count="1" type="stmt"/>
+      <line num="318" count="1" type="stmt"/>
+      <line num="322" count="1" type="stmt"/>
+      <line num="326" count="1" type="stmt"/>
+      <line num="330" count="1" type="stmt"/>
+      <line num="334" count="1" type="stmt"/>
+      <line num="343" count="1" type="stmt"/>
+      <line num="347" count="1" type="stmt"/>
+      <line num="351" count="1" type="stmt"/>
+      <line num="355" count="1" type="stmt"/>
+      <line num="359" count="1" type="stmt"/>
+      <line num="363" count="1" type="stmt"/>
+      <line num="367" count="1" type="stmt"/>
+      <line num="371" count="1" type="stmt"/>
+      <line num="380" count="1" type="stmt"/>
+      <line num="384" count="1" type="stmt"/>
+    </file>
+    <file name="errors.ts" path="/home/martiel/Documentos/GitHub/sascar-sdk/src/errors.ts">
+      <metrics statements="9" coveredstatements="9" conditionals="0" coveredconditionals="0" methods="3" coveredmethods="3"/>
+      <line num="1" count="1" type="stmt"/>
+      <line num="3" count="1" type="stmt"/>
+      <line num="4" count="1" type="stmt"/>
+      <line num="8" count="1" type="stmt"/>
+      <line num="10" count="1" type="stmt"/>
+      <line num="11" count="1" type="stmt"/>
+      <line num="15" count="1" type="stmt"/>
+      <line num="17" count="2" type="stmt"/>
+      <line num="18" count="2" type="stmt"/>
+    </file>
+    <file name="queue.ts" path="/home/martiel/Documentos/GitHub/sascar-sdk/src/queue.ts">
+      <metrics statements="17" coveredstatements="17" conditionals="2" coveredconditionals="2" methods="4" coveredmethods="4"/>
+      <line num="7" count="2" type="stmt"/>
+      <line num="8" count="11" type="stmt"/>
+      <line num="9" count="11" type="stmt"/>
+      <line num="17" count="26" type="stmt"/>
+      <line num="18" count="26" type="stmt"/>
+      <line num="19" count="26" type="stmt"/>
+      <line num="20" count="26" type="stmt"/>
+      <line num="21" count="25" type="stmt"/>
+      <line num="23" count="1" type="stmt"/>
+      <line num="26" count="26" type="stmt"/>
+      <line num="35" count="26" type="cond" truecount="1" falsecount="0"/>
+      <line num="36" count="21" type="stmt"/>
+      <line num="38" count="21" type="stmt"/>
+      <line num="39" count="26" type="stmt"/>
+      <line num="40" count="26" type="cond" truecount="1" falsecount="0"/>
+      <line num="41" count="26" type="stmt"/>
+      <line num="45" count="21" type="stmt"/>
+    </file>
+  </project>
+</coverage>
