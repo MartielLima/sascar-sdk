@@ -129,6 +129,56 @@ describe('SascarClient', () => {
     expect(secondCallBody).toContain('<vehicleId>2</vehicleId>');
   });
 
+  it('deve parar a paginação quando a última página for parcial (length < quantidade)', async () => {
+    const page1 = `
+      <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"><S:Body><ns0:getVehiclesJSONResponse>
+        <return>{"idVeiculo": 1}</return>
+        <return>{"idVeiculo": 2}</return>
+        <return>{"idVeiculo": 3}</return>
+      </ns0:getVehiclesJSONResponse></S:Body></S:Envelope>
+    `;
+    const page2 = `
+      <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"><S:Body><ns0:getVehiclesJSONResponse>
+        <return>{"idVeiculo": 4}</return>
+      </ns0:getVehiclesJSONResponse></S:Body></S:Envelope>
+    `;
+    mockFetchSuccess(page1);
+    mockFetchSuccess(page2);
+
+    const client = new SascarClient();
+    const result = await client.obterVeiculosJson(3);
+
+    expect(result).toHaveLength(4);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('deve parar a paginação quando receber resposta com objeto vazio', async () => {
+    const page1 = `
+      <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"><S:Body><ns0:getVehiclesJSONResponse>
+        <return>{"idVeiculo": 1}</return>
+      </ns0:getVehiclesJSONResponse></S:Body></S:Envelope>
+    `;
+    const page2 = `
+      <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"><S:Body><ns0:getVehiclesJSONResponse>
+        <return>{}</return>
+      </ns0:getVehiclesJSONResponse></S:Body></S:Envelope>
+    `;
+    mockFetchSuccess(page1);
+    mockFetchSuccess(page2);
+
+    const client = new SascarClient();
+    const result = await client.obterVeiculosJson(1);
+
+    expect(result).toHaveLength(1);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('deve lidar com erro de conexão com mensagem não-Error', async () => {
+    (global.fetch as jest.Mock).mockRejectedValueOnce('plain string error');
+    const client = new SascarClient();
+    await expect(client.obterVeiculosJson()).rejects.toThrow(/Erro de conexão com a Sascar: plain string error/);
+  });
+
   // Testa a chamada correta para tudos os endpoints básicos delegados a request()
   describe('Cobertura completa de chamadas da API', () => {
     let client: SascarClient;
