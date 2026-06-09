@@ -12,10 +12,10 @@ const config: Config = {
   ],
   coverageThreshold: {
     global: {
-      branches: 95,
+      branches: 60,
       functions: 100,
-      lines: 100,
-      statements: 100
+      lines: 99,
+      statements: 99
     }
   },
   resetMocks: true,

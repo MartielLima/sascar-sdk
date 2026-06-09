@@ -117,4 +117,19 @@ describe('sendSoapRequest - retry', () => {
     );
     expect(global.fetch).not.toHaveBeenCalled();
   });
+
+  it('lança SascarConnectionError após esgotar retries em erro de rede', async () => {
+    (global.fetch as jest.Mock).mockRejectedValue(new Error('connection refused'));
+    await expect(sendSoapRequest('<xml/>', { url: 'https://x', timeoutMs: 1000, maxRetries: 2 })).rejects.toThrow(
+      /Erro de rede em https:\/\/x: connection refused/
+    );
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('lança SascarConnectionError para erro desconhecido não-Error', async () => {
+    (global.fetch as jest.Mock).mockRejectedValue(42);
+    await expect(sendSoapRequest('<xml/>', { url: 'https://x', timeoutMs: 1000, maxRetries: 1 })).rejects.toThrow(
+      /Erro desconhecido em https:\/\/x: 42/
+    );
+  });
 });

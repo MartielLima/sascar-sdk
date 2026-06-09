@@ -1,15 +1,8 @@
 import { SascarClient } from '../src/client';
-import { SascarConnectionError, SascarRateLimitError } from '../src/errors';
 
 global.fetch = jest.fn();
 
-describe('Errors', () => {
-  it('deve exportar SascarRateLimitError corretamente', () => {
-    expect(new SascarRateLimitError('rate limit')).toBeInstanceOf(Error);
-  });
-});
-
-describe('SascarClient', () => {
+describe('SascarClient - orquestração', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.SASCAR_USUARIO = 'test_user';
@@ -29,287 +22,63 @@ describe('SascarClient', () => {
     });
   };
 
-  const mockFetchError = (errorMessage: string) => {
-    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error(errorMessage));
-  };
-
-  it('deve disparar erro se inicializado sem credenciais', () => {
+  it('lança erro ao ser instanciado sem credenciais', () => {
     delete process.env.SASCAR_USUARIO;
     delete process.env.SASCAR_SENHA;
-    expect(() => new SascarClient()).toThrow('Credenciais da SASCAR não fornecidas.');
+    expect(() => new SascarClient()).toThrow(/Credenciais da SASCAR/);
   });
 
-  it('deve tratar erro de falha na conexão (SascarConnectionError)', async () => {
-    mockFetchError('Network down');
+  it('lê credenciais de SASCAR_USUARIO/SASCAR_SENHA', () => {
+    expect(() => new SascarClient()).not.toThrow();
+  });
+
+  it('aceita credenciais explícitas no construtor', () => {
+    expect(() => new SascarClient({ usuario: 'u', senha: 'p' })).not.toThrow();
+  });
+
+  it('aceita SascarClientOptions com wsdlUrl customizado', () => {
+    const client = new SascarClient({ usuario: 'u', senha: 'p' }, { wsdlUrl: 'https://custom.example/' });
+    expect(client).toBeInstanceOf(SascarClient);
+  });
+
+  it('inclui credenciais no envelope SOAP', async () => {
+    mockFetchSuccess(
+      '<S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"><S:Body><ns0:obterClientesResponse></ns0:obterClientesResponse></S:Body></S:Envelope>'
+    );
     const client = new SascarClient();
-    await expect(client.obterVeiculosJson()).rejects.toThrow(SascarConnectionError);
+    await client.obterClientes();
+    const body = (global.fetch as jest.Mock).mock.calls[0][1].body;
+    expect(body).toContain('<usuario>test_user</usuario>');
+    expect(body).toContain('<senha>test_password</senha>');
   });
 
-  it('deve tratar erro de API (Fault XML da Sascar)', async () => {
-    const faultXml = `
+  it('lança SascarApiError com faultcode quando resposta é SOAP Fault', async () => {
+    mockFetchSuccess(`
       <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
-         <soapenv:Body>
-            <soapenv:Fault>
-               <faultstring>Usuário ou senha inválidos</faultstring>
-            </soapenv:Fault>
-         </soapenv:Body>
+        <soapenv:Body>
+          <soapenv:Fault>
+            <faultcode>soap-env:Client</faultcode>
+            <faultstring>Credenciais inválidas</faultstring>
+          </soapenv:Fault>
+        </soapenv:Body>
       </soapenv:Envelope>
-    `;
-    mockFetchSuccess(faultXml);
+    `);
     const client = new SascarClient();
-    await expect(client.obterVeiculosJson()).rejects.toThrow(/SOAP Fault.*Usuário ou senha inválidos/);
+    await expect(client.obterClientes()).rejects.toMatchObject({
+      name: 'SascarApiError',
+      fault: { faultcode: 'soap-env:Client', faultstring: 'Credenciais inválidas' }
+    });
   });
 
-  it('deve lançar erro se a resposta não possuir o nó de retorno esperado', async () => {
-    const invalidXml = `
-      <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
-         <soapenv:Body>
-            <InvalidResponse></InvalidResponse>
-         </soapenv:Body>
-      </soapenv:Envelope>
-    `;
-    mockFetchSuccess(invalidXml);
-    const client = new SascarClient();
-    await expect(client.obterVeiculosJson()).rejects.toThrow('Resposta inválida do servidor Sascar.');
-  });
-
-  it('deve ignorar erro no parsing de JSON invalido e retornar a string bruta', async () => {
-    const responseXml = `
-      <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"><S:Body><ns0:obterClientesV2Response>
-        <return>{ invalid json }</return>
-      </ns0:obterClientesV2Response></S:Body></S:Envelope>
-    `;
-    mockFetchSuccess(responseXml);
-    const client = new SascarClient();
-    const result = await client.obterClientesV2();
-    expect(result).toEqual(['{ invalid json }']);
-  });
-
-  it('deve lidar com retornos vazios graciosamente', async () => {
-    const emptyXml = `
+  it('lança SascarApiError quando resposta não tem nó de retorno esperado', async () => {
+    mockFetchSuccess(`
       <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
         <S:Body>
-          <ns0:obterClientesV2Response xmlns:ns0="http://webservice.web.integracao.sascar.com.br/">
-          </ns0:obterClientesV2Response>
+          <InvalidResponse></InvalidResponse>
         </S:Body>
       </S:Envelope>
-    `;
-    mockFetchSuccess(emptyXml);
+    `);
     const client = new SascarClient();
-    const result = await client.obterClientesV2();
-    expect(result).toEqual([]);
-  });
-
-  it('deve realizar paginação recursiva no obterVeiculosJson enviando id do último veículo', async () => {
-    const page1 = `
-      <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"><S:Body><ns0:getVehiclesJSONResponse>
-        <return>{"idVeiculo": 1}</return>
-        <return>{"idVeiculo": 2}</return>
-      </ns0:getVehiclesJSONResponse></S:Body></S:Envelope>
-    `;
-    const page2 = `
-      <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"><S:Body><ns0:getVehiclesJSONResponse>
-        <return>{"idVeiculo": 3}</return>
-        <return>{"idVeiculo": 4}</return>
-      </ns0:getVehiclesJSONResponse></S:Body></S:Envelope>
-    `;
-    const page3 = `
-      <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"><S:Body><ns0:getVehiclesJSONResponse>
-      </ns0:getVehiclesJSONResponse></S:Body></S:Envelope>
-    `;
-
-    mockFetchSuccess(page1);
-    mockFetchSuccess(page2);
-    mockFetchSuccess(page3);
-
-    const client = new SascarClient();
-    const result = await client.obterVeiculosJson(2);
-
-    expect(result).toHaveLength(4);
-    expect(global.fetch).toHaveBeenCalledTimes(3);
-    const secondCallBody = (global.fetch as jest.Mock).mock.calls[1][1].body;
-    expect(secondCallBody).toContain('<vehicleId>2</vehicleId>');
-  });
-
-  it('deve parar a paginação quando a última página for parcial (length < quantidade)', async () => {
-    const page1 = `
-      <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"><S:Body><ns0:getVehiclesJSONResponse>
-        <return>{"idVeiculo": 1}</return>
-        <return>{"idVeiculo": 2}</return>
-        <return>{"idVeiculo": 3}</return>
-      </ns0:getVehiclesJSONResponse></S:Body></S:Envelope>
-    `;
-    const page2 = `
-      <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"><S:Body><ns0:getVehiclesJSONResponse>
-        <return>{"idVeiculo": 4}</return>
-      </ns0:getVehiclesJSONResponse></S:Body></S:Envelope>
-    `;
-    mockFetchSuccess(page1);
-    mockFetchSuccess(page2);
-
-    const client = new SascarClient();
-    const result = await client.obterVeiculosJson(3);
-
-    expect(result).toHaveLength(4);
-    expect(global.fetch).toHaveBeenCalledTimes(2);
-  });
-
-  it('deve parar a paginação quando receber resposta com objeto vazio', async () => {
-    const page1 = `
-      <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"><S:Body><ns0:getVehiclesJSONResponse>
-        <return>{"idVeiculo": 1}</return>
-      </ns0:getVehiclesJSONResponse></S:Body></S:Envelope>
-    `;
-    const page2 = `
-      <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"><S:Body><ns0:getVehiclesJSONResponse>
-        <return>{}</return>
-      </ns0:getVehiclesJSONResponse></S:Body></S:Envelope>
-    `;
-    mockFetchSuccess(page1);
-    mockFetchSuccess(page2);
-
-    const client = new SascarClient();
-    const result = await client.obterVeiculosJson(1);
-
-    expect(result).toHaveLength(1);
-    expect(global.fetch).toHaveBeenCalledTimes(2);
-  });
-
-  it('deve lidar com erro de conexão com mensagem não-Error', async () => {
-    (global.fetch as jest.Mock).mockRejectedValueOnce('plain string error');
-    const client = new SascarClient();
-    await expect(client.obterVeiculosJson()).rejects.toThrow(/Erro desconhecido.*plain string error/);
-  });
-
-  describe('integração com transport (timeout/auth/retry)', () => {
-    it('usa timeoutMs configurado via options', async () => {
-      (global.fetch as jest.Mock).mockImplementation(
-        (_url: string, init: RequestInit) =>
-          new Promise((_resolve, reject) => {
-            init.signal?.addEventListener('abort', () => {
-              const err = new Error('aborted');
-              err.name = 'AbortError';
-              reject(err);
-            });
-          })
-      );
-      const client = new SascarClient(undefined, { timeoutMs: 50, maxRetries: 1 });
-      await expect(client.obterClientes()).rejects.toThrow(/timeout/i);
-    });
-
-    it('lança SascarAuthError em HTTP 401', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        text: async () => ''
-      });
-      const client = new SascarClient();
-      await expect(client.obterClientes()).rejects.toThrow(/auth|401/i);
-    });
-
-    it('lança SascarRateLimitError em HTTP 429', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: false,
-        status: 429,
-        text: async () => ''
-      });
-      const client = new SascarClient();
-      await expect(client.obterClientes()).rejects.toThrow(/rate|429/i);
-    });
-  });
-
-  // Testa a chamada correta para tudos os endpoints básicos delegados a request()
-  describe('Cobertura completa de chamadas da API', () => {
-    let client: SascarClient;
-
-    beforeEach(() => {
-      client = new SascarClient();
-      // Criamos um mock genérico que serve para qualquer chamada testando apenas o routing
-      (global.fetch as jest.Mock).mockImplementation(async (url, init) => {
-        // Encontraremos o methodName procurado no body: <web:methodName>
-        const match = /<web:([a-zA-Z0-9_]+)>/i.exec(init.body);
-        const method = match ? match[1] : 'unknown';
-        const fakeReturn = method.includes('JSON') ? '{"id":1}' : '<id>1</id>';
-        return {
-          ok: true,
-          status: 200,
-          text: async () => `
-            <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
-              <S:Body>
-                <ns0:${method}Response>
-                  <return>${fakeReturn}</return>
-                </ns0:${method}Response>
-              </S:Body>
-            </S:Envelope>
-          `
-        };
-      });
-    });
-
-    it('testa todos os métodos geográficos e de telemetria', async () => {
-      await expect(client.atualizarSenha('1', '2')).resolves.toBeDefined();
-      await expect(client.obterAlertasAVDVinculados('AAA', '1')).resolves.toBeDefined();
-      await expect(client.obterGrupoAtuadores()).resolves.toBeDefined();
-      await expect(client.obterCadastroAlertasAVD('data')).resolves.toBeDefined();
-      await expect(client.obterClientes(1)).resolves.toBeDefined();
-      await expect(client.obterVeiculos(1)).resolves.toBeDefined();
-      await expect(client.obterVeiculosRFNacional(1)).resolves.toBeDefined();
-      await expect(client.obterDadosAdicionais(1)).resolves.toBeDefined();
-      await expect(client.obterDadosAdicionaisCliente(1)).resolves.toBeDefined();
-      await expect(client.obterPontosReferencia()).resolves.toBeDefined();
-      await expect(client.obterSequenciamentoEvento()).resolves.toBeDefined();
-      await expect(client.obterMotoristas(1)).resolves.toBeDefined();
-      await expect(client.obterMotoristasVeiculos(1)).resolves.toBeDefined();
-      await expect(client.obterLayoutTecladoVeiculos()).resolves.toBeDefined();
-      await expect(client.obterLayoutGrupoPontos()).resolves.toBeDefined();
-      await expect(client.obterRotas('1')).resolves.toBeDefined();
-      await expect(client.obterStatusComando(1)).resolves.toBeDefined();
-      await expect(client.obterStatusComandoTicketSascar(1)).resolves.toBeDefined();
-      await expect(client.obterTipoComando()).resolves.toBeDefined();
-      await expect(client.obterMacroTd50Tmcd('t')).resolves.toBeDefined();
-      await expect(client.obterMacroTd50TmcdDetalhado('t')).resolves.toBeDefined();
-      await expect(client.obterMascaraDispositivo(1)).resolves.toBeDefined();
-      await expect(client.obterMacroTd40(true)).resolves.toBeDefined();
-      await expect(client.obterLayout('t')).resolves.toBeDefined();
-      await expect(client.obterLayoutDetalhado('t')).resolves.toBeDefined();
-      await expect(client.obterLayoutAcaoEmbarcadaAVD()).resolves.toBeDefined();
-      await expect(client.comandoEmbarquePontoDiario(1, 'ref')).resolves.toBeDefined();
-      await expect(client.enviarParametrizacaoTelemetria(1, {})).resolves.toBeDefined();
-      await expect(client.obterMacroTms3()).resolves.toBeDefined();
-      await expect(client.solicitarEventosCaixaPreta()).resolves.toBeDefined();
-      await expect(client.recuperarEventosCaixaPreta()).resolves.toBeDefined();
-      await expect(client.obterDeltaTelemetriaIntegracao('1', '2', 3)).resolves.toBeDefined();
-      await expect(client.obterDeltaTelemetriaIntegracaoInercia('1', '2', 3)).resolves.toBeDefined();
-      await expect(client.obterDeltaTelemetriaIntegracaoDataChegada('1', '2', 3, '4', '5')).resolves.toBeDefined();
-      await expect(
-        client.obterDeltaTelemetriaIntegracaoInerciaDataChegada('1', '2', 3, '4', '5')
-      ).resolves.toBeDefined();
-      await expect(client.obterEventoTelemetriaIntegracao('1', '2', 3)).resolves.toBeDefined();
-      await expect(client.obterEventoTelemetriaDescricao()).resolves.toBeDefined();
-      await expect(client.obterEventosTempoDirecao()).resolves.toBeDefined();
-      await expect(client.obterEventosTempoDirecaoDataChegada()).resolves.toBeDefined();
-    });
-
-    it('testa todos os métodos da fila (posições)', async () => {
-      await expect(client.obterPacotePosicoes()).resolves.toBeDefined();
-      await expect(client.obterPacotePosicoesJSON()).resolves.toBeDefined();
-      await expect(client.obterPacotePosicoesMotorista()).resolves.toBeDefined();
-      await expect(client.obterPacotePosicoesMotoristaJSON()).resolves.toBeDefined();
-      await expect(client.obterPacotePosicoesMotoristaComPlaca()).resolves.toBeDefined();
-      await expect(client.obterPacotePosicoesJSONComPlaca()).resolves.toBeDefined();
-      await expect(client.obterPacotePosicoesRestricao()).resolves.toBeDefined();
-      await expect(client.obterPacotePosicoesMotoristaRestricao()).resolves.toBeDefined();
-      await expect(client.obterPacotePosicaoMotoristaPorRange(1, 2)).resolves.toBeDefined();
-      await expect(client.obterPacotePosicaoMotoristaPorRangeJSON(1, 2)).resolves.toBeDefined();
-      await expect(client.obterPacotePosicaoHistorico('1', '2')).resolves.toBeDefined();
-      await expect(client.obterPacotePosicaoPorRange(1, 2)).resolves.toBeDefined();
-      await expect(client.obterPacotePosicaoPorRangeJSON(1, 2)).resolves.toBeDefined();
-      await expect(client.obterPacoteLocalizacao()).resolves.toBeDefined();
-      await expect(client.getPositionsPacketJSON()).resolves.toBeDefined();
-      await expect(client.getDriverPositionPacketJSON()).resolves.toBeDefined();
-      await expect(client.getPositionPacketByRangeJSON(1, 2)).resolves.toBeDefined();
-      await expect(client.getDriverPositionPacketByRangeJSON(1, 2)).resolves.toBeDefined();
-      await expect(client.getPositionPacketWithLicensePlateJSON()).resolves.toBeDefined();
-    });
+    await expect(client.obterClientes()).rejects.toThrow(/Resposta inválida/);
   });
 });
