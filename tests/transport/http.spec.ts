@@ -100,4 +100,21 @@ describe('sendSoapRequest - retry', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(onRetry).toHaveBeenCalledWith(1, expect.any(Number));
   });
+
+  it('retenta em erro de rede até sucesso', async () => {
+    (global.fetch as jest.Mock)
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce({ ok: true, status: 200, text: async () => '<ok/>' });
+
+    const result = await sendSoapRequest('<xml/>', { url: 'https://x', timeoutMs: 1000, maxRetries: 3 });
+    expect(result).toBe('<ok/>');
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('lança SascarConnectionError quando maxRetries é zero', async () => {
+    await expect(sendSoapRequest('<xml/>', { url: 'https://x', timeoutMs: 1000, maxRetries: 0 })).rejects.toThrow(
+      /Falha após 0 tentativas/
+    );
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
 });

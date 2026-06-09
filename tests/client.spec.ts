@@ -23,6 +23,8 @@ describe('SascarClient', () => {
 
   const mockFetchSuccess = (xmlBody: string) => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
       text: async () => xmlBody
     });
   };
@@ -55,7 +57,7 @@ describe('SascarClient', () => {
     `;
     mockFetchSuccess(faultXml);
     const client = new SascarClient();
-    await expect(client.obterVeiculosJson()).rejects.toThrow('Erro SOAP da Sascar: Usuário ou senha inválidos');
+    await expect(client.obterVeiculosJson()).rejects.toThrow(/SOAP Fault.*Usuário ou senha inválidos/);
   });
 
   it('deve lançar erro se a resposta não possuir o nó de retorno esperado', async () => {
@@ -176,7 +178,7 @@ describe('SascarClient', () => {
   it('deve lidar com erro de conexão com mensagem não-Error', async () => {
     (global.fetch as jest.Mock).mockRejectedValueOnce('plain string error');
     const client = new SascarClient();
-    await expect(client.obterVeiculosJson()).rejects.toThrow(/Erro de conexão com a Sascar: plain string error/);
+    await expect(client.obterVeiculosJson()).rejects.toThrow(/Erro desconhecido.*plain string error/);
   });
 
   // Testa a chamada correta para tudos os endpoints básicos delegados a request()
@@ -192,6 +194,8 @@ describe('SascarClient', () => {
         const method = match ? match[1] : 'unknown';
         const fakeReturn = method.includes('JSON') ? '{"id":1}' : '<id>1</id>';
         return {
+          ok: true,
+          status: 200,
           text: async () => `
             <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
               <S:Body>

@@ -1,8 +1,26 @@
 import { XMLParser } from 'fast-xml-parser';
 import { AsyncQueue } from './queue';
-import { SascarApiError, SascarConnectionError } from './errors';
+import { SascarApiError } from './errors';
 import { buildSoapEnvelope } from './transport/envelope';
+import { sendSoapRequest } from './transport/http';
+import { parseSoapFault } from './transport/fault';
 import * as T from './types';
+
+/**
+ * Opções de configuração do cliente. Todos os campos são opcionais.
+ */
+export interface SascarClientOptions {
+  /** Timeout em ms para cada requisição HTTP. Default: 30000. */
+  timeoutMs?: number;
+  /** Número máximo de tentativas (incluindo a primeira). Default: 3. */
+  maxRetries?: number;
+  /** URL alternativa do WebService SasIntegra. */
+  wsdlUrl?: string;
+}
+
+const DEFAULT_TIMEOUT_MS = 30000;
+const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_WSDL_URL = 'https://sasintegra.sascar.com.br/SasIntegra/SasIntegraWSService';
 
 /**
  * Cliente SOAP para o WebService SasIntegra v2.07 da Sascar/Michelin.
@@ -14,13 +32,18 @@ import * as T from './types';
 export class SascarClient {
   private usuario: string;
   private senha: string;
-  private wsdlUrl = 'https://sasintegra.sascar.com.br/SasIntegra/SasIntegraWSService';
+  private wsdlUrl: string;
+  private timeoutMs: number;
+  private maxRetries: number;
   private positionsQueue = new AsyncQueue();
   private parser = new XMLParser({ ignoreAttributes: true, removeNSPrefix: true });
 
-  constructor(credentials?: T.SascarCredentials) {
+  constructor(credentials?: T.SascarCredentials, options?: SascarClientOptions) {
     this.usuario = credentials?.usuario || process.env.SASCAR_USUARIO || '';
     this.senha = credentials?.senha || process.env.SASCAR_SENHA || '';
+    this.wsdlUrl = options?.wsdlUrl || DEFAULT_WSDL_URL;
+    this.timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    this.maxRetries = options?.maxRetries ?? DEFAULT_MAX_RETRIES;
 
     if (!this.usuario || !this.senha) {
       throw new Error('Credenciais da SASCAR não fornecidas.');
@@ -34,39 +57,27 @@ export class SascarClient {
   ): Promise<TReturn> {
     const xml = buildSoapEnvelope(methodName, params, this.usuario, this.senha);
 
-    const execute = async () => {
-      let response: Response;
-      try {
-        response = await fetch(this.wsdlUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'text/xml;charset=UTF-8',
-            SOAPAction: `""`
-          },
-          body: xml
-        });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        throw new SascarConnectionError(`Erro de conexão com a Sascar: ${message}`);
+    const execute = async (): Promise<TReturn> => {
+      const text = await sendSoapRequest(xml, {
+        url: this.wsdlUrl,
+        timeoutMs: this.timeoutMs,
+        maxRetries: this.maxRetries
+      });
+
+      const fault = parseSoapFault(text);
+      if (fault) {
+        throw new SascarApiError(`[${methodName}] SOAP Fault: ${fault.faultstring} (${fault.faultcode})`, fault);
       }
 
-      const text = await response.text();
       const parsed = this.parser.parse(text);
-
-      if (parsed.Envelope?.Body?.Fault) {
-        throw new SascarApiError(`Erro SOAP da Sascar: ${parsed.Envelope.Body.Fault.faultstring}`);
-      }
-
       const responseNode = parsed.Envelope?.Body?.[`${methodName}Response`];
       if (responseNode === undefined) {
-        throw new SascarApiError('Resposta inválida do servidor Sascar.');
+        throw new SascarApiError(`[${methodName}] Resposta inválida do servidor Sascar.`);
       }
 
       let result = responseNode.return;
-
       if (!result) return [] as unknown as TReturn;
 
-      // JSON parses nested strings
       const parseItem = (item: unknown): unknown => {
         if (typeof item === 'string' && (item.trim().startsWith('{') || item.trim().startsWith('['))) {
           try {
@@ -81,10 +92,9 @@ export class SascarClient {
       if (Array.isArray(result)) {
         result = result.map(parseItem);
       } else {
-        result = [parseItem(result)]; // Force array for multiple returns
+        result = [parseItem(result)];
       }
 
-      // Se for método não-lista, podemos extrair dps. Mas a maioria é lista.
       return result as unknown as TReturn;
     };
 
