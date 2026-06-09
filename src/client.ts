@@ -346,6 +346,22 @@ export class SascarClient {
     );
   }
 
+  /**
+   * Histórico de pacotes de posições com informação extra de motorista
+   * e limpador de para-brisa. Versão "motorista" de obterPacotePosicaoHistorico.
+   */
+  async obterPacotePosicaoMotoristaHistorico(
+    dataInicio: string,
+    dataFinal: string,
+    idVeiculo?: number
+  ): Promise<T.PacotePosicaoXML[]> {
+    return this.request<T.PacotePosicaoXML[]>(
+      'obterPacotePosicaoMotoristaHistorico',
+      { dataInicio, dataFinal, idVeiculo },
+      true
+    );
+  }
+
   async obterPacotePosicaoPorRange(
     idInicio: number,
     idFinal: number,

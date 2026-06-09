@@ -68,4 +68,11 @@ describe('Posições e Rastreamento (integration)', () => {
     expect(result).toMatchObject([{ idVeiculo: 1 }]);
     expect(scope.isDone()).toBe(true);
   });
+
+  it('obterPacotePosicaoMotoristaHistorico envia dataInicio, dataFinal, idVeiculo', async () => {
+    const scope = mockSoapSuccess('obterPacotePosicaoMotoristaHistorico', '<return><idVeiculo>1</idVeiculo></return>');
+    const result = await client.obterPacotePosicaoMotoristaHistorico('2023-10-01', '2023-10-02', 5);
+    expect(result).toMatchObject([{ idVeiculo: 1 }]);
+    expect(scope.isDone()).toBe(true);
+  });
 });
