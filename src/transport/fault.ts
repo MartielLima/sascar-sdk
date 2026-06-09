@@ -3,8 +3,3 @@ export interface SascarSoapFault {
   faultstring: string;
   detail?: string;
 }
-
-export const FAULT_STUB: SascarSoapFault = {
-  faultcode: 'stub',
-  faultstring: 'stub'
-};

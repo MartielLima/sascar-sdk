@@ -1,6 +1,7 @@
-import { XMLParser, XMLBuilder } from 'fast-xml-parser';
+import { XMLParser } from 'fast-xml-parser';
 import { AsyncQueue } from './queue';
-import { SascarConnectionError, SascarApiError } from './errors';
+import { SascarApiError, SascarConnectionError } from './errors';
+import { buildSoapEnvelope } from './transport/envelope';
 import * as T from './types';
 
 /**
@@ -26,37 +27,12 @@ export class SascarClient {
     }
   }
 
-  private buildSoapEnvelope(methodName: string, bodyObj: T.SoapBody): string {
-    const builder = new XMLBuilder({
-      ignoreAttributes: false,
-      format: true,
-      suppressEmptyNode: true
-    });
-
-    const envelope = {
-      'soapenv:Envelope': {
-        '@_xmlns:soapenv': 'http://schemas.xmlsoap.org/soap/envelope/',
-        '@_xmlns:web': 'http://webservice.web.integracao.sascar.com.br/',
-        'soapenv:Header': '',
-        'soapenv:Body': {
-          [`web:${methodName}`]: {
-            usuario: this.usuario,
-            senha: this.senha,
-            ...bodyObj
-          }
-        }
-      }
-    };
-
-    return builder.build(envelope);
-  }
-
   private async request<TReturn>(
     methodName: string,
     params: T.SoapBody = {},
     isPositionMethod = false
   ): Promise<TReturn> {
-    const xml = this.buildSoapEnvelope(methodName, params);
+    const xml = buildSoapEnvelope(methodName, params, this.usuario, this.senha);
 
     const execute = async () => {
       let response: Response;
