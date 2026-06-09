@@ -1,4 +1,3 @@
-
 # 🚛 Sascar Integra SDK v2.07 - Documentação Completa
 
 SDK corporativo em TypeScript para integração com o Web Service SOAP da **SASCAR (SasIntegra v2.07)**.
@@ -16,7 +15,7 @@ bun add github:MartielLima/sascar-sdk
 
 ```typescript
 import { SascarClient } from 'sascar-sdk';
-const client = new SascarClient({ usuario: "foo", senha: "bar" });
+const client = new SascarClient({ usuario: 'foo', senha: 'bar' });
 // Opcional: as credenciais podem ser omitidas se SASCAR_USUARIO e SASCAR_SENHA estiverem no seu .env
 ```
 
@@ -25,7 +24,7 @@ const client = new SascarClient({ usuario: "foo", senha: "bar" });
 ## 📚 Referência Completa da API
 
 Abaixo estão listados todos os `60` métodos suportados pelo SDK.
-*Clique no nome do método para expandir e visualizar todos os atributos de retorno e o exemplo de código.*
+_Clique no nome do método para expandir e visualizar todos os atributos de retorno e o exemplo de código._
 
 ### 🛠️ Cadastros e Entidades
 
@@ -2021,7 +2020,12 @@ interface PositionPacketJSON {
 **Exemplo de Chamada:**
 
 ```typescript
-const resultado = await client.obterDeltaTelemetriaIntegracao('2023-10-01 00:00:00', '2023-10-01 00:00:00', 12345, null);
+const resultado = await client.obterDeltaTelemetriaIntegracao(
+  '2023-10-01 00:00:00',
+  '2023-10-01 00:00:00',
+  12345,
+  null
+);
 console.log(resultado);
 ```
 
@@ -2104,7 +2108,12 @@ interface DeltaTelemetria {
 **Exemplo de Chamada:**
 
 ```typescript
-const resultado = await client.obterDeltaTelemetriaIntegracaoInercia('2023-10-01 00:00:00', '2023-10-01 00:00:00', 12345, null);
+const resultado = await client.obterDeltaTelemetriaIntegracaoInercia(
+  '2023-10-01 00:00:00',
+  '2023-10-01 00:00:00',
+  12345,
+  null
+);
 console.log(resultado);
 ```
 
@@ -2187,7 +2196,13 @@ interface DeltaTelemetria {
 **Exemplo de Chamada:**
 
 ```typescript
-const resultado = await client.obterDeltaTelemetriaIntegracaoDataChegada('2023-10-01 00:00:00', '2023-10-01 00:00:00', 12345, '2023-10-01 00:00:00', '2023-10-01 00:00:00');
+const resultado = await client.obterDeltaTelemetriaIntegracaoDataChegada(
+  '2023-10-01 00:00:00',
+  '2023-10-01 00:00:00',
+  12345,
+  '2023-10-01 00:00:00',
+  '2023-10-01 00:00:00'
+);
 console.log(resultado);
 ```
 
@@ -2270,7 +2285,13 @@ interface DeltaTelemetria {
 **Exemplo de Chamada:**
 
 ```typescript
-const resultado = await client.obterDeltaTelemetriaIntegracaoInerciaDataChegada('2023-10-01 00:00:00', '2023-10-01 00:00:00', 12345, '2023-10-01 00:00:00', '2023-10-01 00:00:00');
+const resultado = await client.obterDeltaTelemetriaIntegracaoInerciaDataChegada(
+  '2023-10-01 00:00:00',
+  '2023-10-01 00:00:00',
+  12345,
+  '2023-10-01 00:00:00',
+  '2023-10-01 00:00:00'
+);
 console.log(resultado);
 ```
 
@@ -2353,7 +2374,12 @@ interface DeltaTelemetria {
 **Exemplo de Chamada:**
 
 ```typescript
-const resultado = await client.obterEventoTelemetriaIntegracao('2023-10-01 00:00:00', '2023-10-01 00:00:00', 12345, null);
+const resultado = await client.obterEventoTelemetriaIntegracao(
+  '2023-10-01 00:00:00',
+  '2023-10-01 00:00:00',
+  12345,
+  null
+);
 console.log(resultado);
 ```
 
@@ -2445,7 +2471,14 @@ interface EventoTempoDirecao {
 **Exemplo de Chamada:**
 
 ```typescript
-const resultado = await client.obterEventosTempoDirecaoDataChegada(100, 12345, '2023-10-01 00:00:00', '2023-10-01 00:00:00', '2023-10-01 00:00:00', '2023-10-01 00:00:00');
+const resultado = await client.obterEventosTempoDirecaoDataChegada(
+  100,
+  12345,
+  '2023-10-01 00:00:00',
+  '2023-10-01 00:00:00',
+  '2023-10-01 00:00:00',
+  '2023-10-01 00:00:00'
+);
 console.log(resultado);
 ```
 
@@ -2765,7 +2798,12 @@ interface MacroTms3 {
 **Exemplo de Chamada:**
 
 ```typescript
-const resultado = await client.solicitarEventosCaixaPreta(12345, 'ABC1D23', '2023-10-01 00:00:00', '2023-10-01 00:00:00');
+const resultado = await client.solicitarEventosCaixaPreta(
+  12345,
+  'ABC1D23',
+  '2023-10-01 00:00:00',
+  '2023-10-01 00:00:00'
+);
 console.log(resultado);
 ```
 

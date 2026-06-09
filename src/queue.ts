@@ -1,7 +1,7 @@
 /**
  * Fila assíncrona simples para garantir a execução sequencial de tarefas.
  * Funciona como um Mutex (Mutual Exclusion) mantendo um array de promessas
- * que são resolvidas estritamente em ordem de entrada. Isso é essencial 
+ * que são resolvidas estritamente em ordem de entrada. Isso é essencial
  * para respeitar o limite de conexões simultâneas da API da Sascar.
  */
 export class AsyncQueue {

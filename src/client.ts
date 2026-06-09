@@ -54,7 +54,7 @@ export class SascarClient {
           method: 'POST',
           headers: {
             'Content-Type': 'text/xml;charset=UTF-8',
-            'SOAPAction': `""`
+            SOAPAction: `""`
           },
           body: xml
         });
@@ -75,15 +75,15 @@ export class SascarClient {
       }
 
       let result = responseNode.return;
-      
+
       if (!result) return [] as unknown as TReturn;
 
       // JSON parses nested strings
       const parseItem = (item: any) => {
         if (typeof item === 'string' && (item.trim().startsWith('{') || item.trim().startsWith('['))) {
           try {
-              return JSON.parse(item);
-          } catch(e) {}
+            return JSON.parse(item);
+          } catch (e) {}
         }
         return item;
       };
@@ -137,26 +137,26 @@ export class SascarClient {
   async obterVeiculosJson(quantidade = 1000, startIdVeiculo = 0): Promise<T.Veiculo[]> {
     let allVehicles: T.Veiculo[] = [];
     let currentId = startIdVeiculo;
-    
+
     while (true) {
-        const result = await this.request<T.Veiculo[]>('getVehiclesJSON', {
-            quantidade,
-            ...(currentId > 0 ? { vehicleId: currentId } : {})
-        });
+      const result = await this.request<T.Veiculo[]>('getVehiclesJSON', {
+        quantidade,
+        ...(currentId > 0 ? { vehicleId: currentId } : {})
+      });
 
-        const vehicles = Array.isArray(result) ? result : (result ? [result] : []);
-        
-        if (vehicles.length === 0 || Object.keys(vehicles[0]).length === 0) {
-            break;
-        }
+      const vehicles = Array.isArray(result) ? result : result ? [result] : [];
 
-        allVehicles = allVehicles.concat(vehicles);
+      if (vehicles.length === 0 || Object.keys(vehicles[0]).length === 0) {
+        break;
+      }
 
-        if (vehicles.length < quantidade) {
-            break;
-        }
+      allVehicles = allVehicles.concat(vehicles);
 
-        currentId = vehicles[vehicles.length - 1].idVeiculo;
+      if (vehicles.length < quantidade) {
+        break;
+      }
+
+      currentId = vehicles[vehicles.length - 1].idVeiculo;
     }
 
     return allVehicles;
@@ -220,8 +220,16 @@ export class SascarClient {
     return this.request<T.MacroTd50Tmcd[]>('obterMacroTd50Tmcd', { tipoTeclado });
   }
 
-  async obterMacroTd50TmcdDetalhado(tipoTeclado: string, idLayout?: number, dataReferencia?: string): Promise<T.MacroTd50TmcdDetalhado[]> {
-    return this.request<T.MacroTd50TmcdDetalhado[]>('obterMacroTd50TmcdDetalhado', { tipoTeclado, idLayout, dataReferencia });
+  async obterMacroTd50TmcdDetalhado(
+    tipoTeclado: string,
+    idLayout?: number,
+    dataReferencia?: string
+  ): Promise<T.MacroTd50TmcdDetalhado[]> {
+    return this.request<T.MacroTd50TmcdDetalhado[]>('obterMacroTd50TmcdDetalhado', {
+      tipoTeclado,
+      idLayout,
+      dataReferencia
+    });
   }
 
   async obterMascaraDispositivo(idVeiculo: number): Promise<T.MascaraDispositivo[]> {
@@ -290,24 +298,60 @@ export class SascarClient {
     return this.request<T.PacotePosicaoXML[]>('obterPacotePosicoesMotoristaRestricao', { quantidade, idVeiculo }, true);
   }
 
-  async obterPacotePosicaoMotoristaPorRange(idInicio: number, idFinal: number, quantidade = 3000): Promise<T.PacotePosicaoXML[]> {
-    return this.request<T.PacotePosicaoXML[]>('obterPacotePosicaoMotoristaPorRange', { idInicio, idFinal, quantidade }, true);
+  async obterPacotePosicaoMotoristaPorRange(
+    idInicio: number,
+    idFinal: number,
+    quantidade = 3000
+  ): Promise<T.PacotePosicaoXML[]> {
+    return this.request<T.PacotePosicaoXML[]>(
+      'obterPacotePosicaoMotoristaPorRange',
+      { idInicio, idFinal, quantidade },
+      true
+    );
   }
 
-  async obterPacotePosicaoMotoristaPorRangeJSON(idInicio: number, idFinal: number, quantidade = 3000): Promise<T.PacotePosicaoJSON[]> {
-    return this.request<T.PacotePosicaoJSON[]>('obterPacotePosicaoMotoristaPorRangeJSON', { idInicio, idFinal, quantidade }, true);
+  async obterPacotePosicaoMotoristaPorRangeJSON(
+    idInicio: number,
+    idFinal: number,
+    quantidade = 3000
+  ): Promise<T.PacotePosicaoJSON[]> {
+    return this.request<T.PacotePosicaoJSON[]>(
+      'obterPacotePosicaoMotoristaPorRangeJSON',
+      { idInicio, idFinal, quantidade },
+      true
+    );
   }
 
-  async obterPacotePosicaoHistorico(dataInicio: string, dataFinal: string, idVeiculo?: number): Promise<T.PacotePosicaoXML[]> {
-    return this.request<T.PacotePosicaoXML[]>('obterPacotePosicaoHistorico', { dataInicio, dataFinal, idVeiculo }, true);
+  async obterPacotePosicaoHistorico(
+    dataInicio: string,
+    dataFinal: string,
+    idVeiculo?: number
+  ): Promise<T.PacotePosicaoXML[]> {
+    return this.request<T.PacotePosicaoXML[]>(
+      'obterPacotePosicaoHistorico',
+      { dataInicio, dataFinal, idVeiculo },
+      true
+    );
   }
 
-  async obterPacotePosicaoPorRange(idInicio: number, idFinal: number, quantidade = 3000): Promise<T.PacotePosicaoXML[]> {
+  async obterPacotePosicaoPorRange(
+    idInicio: number,
+    idFinal: number,
+    quantidade = 3000
+  ): Promise<T.PacotePosicaoXML[]> {
     return this.request<T.PacotePosicaoXML[]>('obterPacotePosicaoPorRange', { idInicio, idFinal, quantidade }, true);
   }
 
-  async obterPacotePosicaoPorRangeJSON(idInicio: number, idFinal: number, quantidade = 3000): Promise<T.PacotePosicaoJSON[]> {
-    return this.request<T.PacotePosicaoJSON[]>('obterPacotePosicaoPorRangeJSON', { idInicio, idFinal, quantidade }, true);
+  async obterPacotePosicaoPorRangeJSON(
+    idInicio: number,
+    idFinal: number,
+    quantidade = 3000
+  ): Promise<T.PacotePosicaoJSON[]> {
+    return this.request<T.PacotePosicaoJSON[]>(
+      'obterPacotePosicaoPorRangeJSON',
+      { idInicio, idFinal, quantidade },
+      true
+    );
   }
 
   async obterPacoteLocalizacao(quantidade = 2000): Promise<T.PacoteLocalizacao[]> {
@@ -326,8 +370,16 @@ export class SascarClient {
     return this.request<T.PositionPacketJSON[]>('getPositionPacketByRangeJSON', { startId, endId, quantity }, true);
   }
 
-  async getDriverPositionPacketByRangeJSON(startId: number, endId: number, quantity = 3000): Promise<T.PositionPacketJSON[]> {
-    return this.request<T.PositionPacketJSON[]>('getDriverPositionPacketByRangeJSON', { startId, endId, quantity }, true);
+  async getDriverPositionPacketByRangeJSON(
+    startId: number,
+    endId: number,
+    quantity = 3000
+  ): Promise<T.PositionPacketJSON[]> {
+    return this.request<T.PositionPacketJSON[]>(
+      'getDriverPositionPacketByRangeJSON',
+      { startId, endId, quantity },
+      true
+    );
   }
 
   async getPositionPacketWithLicensePlateJSON(quantity = 3000): Promise<T.PositionPacketJSON[]> {
@@ -339,36 +391,114 @@ export class SascarClient {
   /**
    * @deprecated Descontinuado. Use obterDeltaTelemetriaIntegracaoInercia
    */
-  async obterDeltaTelemetriaIntegracao(dataInicio: string, dataFinal: string, idVeiculo: number, pagina?: number): Promise<T.DeltaTelemetria[]> {
-    return this.request<T.DeltaTelemetria[]>('obterDeltaTelemetriaIntegracao', { dataInicio, dataFinal, idVeiculo, deltmPagina: pagina });
+  async obterDeltaTelemetriaIntegracao(
+    dataInicio: string,
+    dataFinal: string,
+    idVeiculo: number,
+    pagina?: number
+  ): Promise<T.DeltaTelemetria[]> {
+    return this.request<T.DeltaTelemetria[]>('obterDeltaTelemetriaIntegracao', {
+      dataInicio,
+      dataFinal,
+      idVeiculo,
+      deltmPagina: pagina
+    });
   }
 
-  async obterDeltaTelemetriaIntegracaoInercia(dataInicio: string, dataFinal: string, idVeiculo: number, pagina?: number): Promise<T.DeltaTelemetria[]> {
-    return this.request<T.DeltaTelemetria[]>('obterDeltaTelemetriaIntegracaoInercia', { dataInicio, dataFinal, idVeiculo, deltmPagina: pagina });
+  async obterDeltaTelemetriaIntegracaoInercia(
+    dataInicio: string,
+    dataFinal: string,
+    idVeiculo: number,
+    pagina?: number
+  ): Promise<T.DeltaTelemetria[]> {
+    return this.request<T.DeltaTelemetria[]>('obterDeltaTelemetriaIntegracaoInercia', {
+      dataInicio,
+      dataFinal,
+      idVeiculo,
+      deltmPagina: pagina
+    });
   }
 
-  async obterDeltaTelemetriaIntegracaoDataChegada(dataInicio: string, dataFinal: string, idVeiculo: number, dataChegadaInicio: string, dataChegadaFinal: string): Promise<T.DeltaTelemetria[]> {
-    return this.request<T.DeltaTelemetria[]>('obterDeltaTelemetriaIntegracaoDataChegada', { dataInicio, dataFinal, idVeiculo, dataChegadaInicio, dataChegadaFinal });
+  async obterDeltaTelemetriaIntegracaoDataChegada(
+    dataInicio: string,
+    dataFinal: string,
+    idVeiculo: number,
+    dataChegadaInicio: string,
+    dataChegadaFinal: string
+  ): Promise<T.DeltaTelemetria[]> {
+    return this.request<T.DeltaTelemetria[]>('obterDeltaTelemetriaIntegracaoDataChegada', {
+      dataInicio,
+      dataFinal,
+      idVeiculo,
+      dataChegadaInicio,
+      dataChegadaFinal
+    });
   }
 
-  async obterDeltaTelemetriaIntegracaoInerciaDataChegada(dataInicio: string, dataFinal: string, idVeiculo: number, dataChegadaInicio: string, dataChegadaFinal: string): Promise<T.DeltaTelemetria[]> {
-    return this.request<T.DeltaTelemetria[]>('obterDeltaTelemetriaIntegracaoInerciaDataChegada', { dataInicio, dataFinal, idVeiculo, dataChegadaInicio, dataChegadaFinal });
+  async obterDeltaTelemetriaIntegracaoInerciaDataChegada(
+    dataInicio: string,
+    dataFinal: string,
+    idVeiculo: number,
+    dataChegadaInicio: string,
+    dataChegadaFinal: string
+  ): Promise<T.DeltaTelemetria[]> {
+    return this.request<T.DeltaTelemetria[]>('obterDeltaTelemetriaIntegracaoInerciaDataChegada', {
+      dataInicio,
+      dataFinal,
+      idVeiculo,
+      dataChegadaInicio,
+      dataChegadaFinal
+    });
   }
 
-  async obterEventoTelemetriaIntegracao(dataInicio: string, dataFinal: string, idVeiculo: number, idEventoList?: string): Promise<T.EventoTelemetria[]> {
-    return this.request<T.EventoTelemetria[]>('obterEventoTelemetriaIntegracao', { dataInicio, dataFinal, idVeiculo, idEventoList });
+  async obterEventoTelemetriaIntegracao(
+    dataInicio: string,
+    dataFinal: string,
+    idVeiculo: number,
+    idEventoList?: string
+  ): Promise<T.EventoTelemetria[]> {
+    return this.request<T.EventoTelemetria[]>('obterEventoTelemetriaIntegracao', {
+      dataInicio,
+      dataFinal,
+      idVeiculo,
+      idEventoList
+    });
   }
 
   async obterEventoTelemetriaDescricao(): Promise<T.TipoEventoTelemetriaDescricao[]> {
     return this.request<T.TipoEventoTelemetriaDescricao[]>('obterEventoTelemetriaDescricao');
   }
 
-  async obterEventosTempoDirecao(quantidade = 3000, idMotorista?: number, dataInicio?: string, dataFim?: string): Promise<T.EventoTempoDirecao[]> {
-    return this.request<T.EventoTempoDirecao[]>('obterEventosTempoDirecao', { quantidade, idMotorista, dataInicio, dataFim });
+  async obterEventosTempoDirecao(
+    quantidade = 3000,
+    idMotorista?: number,
+    dataInicio?: string,
+    dataFim?: string
+  ): Promise<T.EventoTempoDirecao[]> {
+    return this.request<T.EventoTempoDirecao[]>('obterEventosTempoDirecao', {
+      quantidade,
+      idMotorista,
+      dataInicio,
+      dataFim
+    });
   }
 
-  async obterEventosTempoDirecaoDataChegada(quantidade = 3000, idMotorista?: number, dataInicio?: string, dataFim?: string, dataChegadaInicial?: string, dataChegadaFinal?: string): Promise<T.EventoTempoDirecao[]> {
-    return this.request<T.EventoTempoDirecao[]>('obterEventosTempoDirecaoDataChegada', { quantidade, idMotorista, dataInicio, dataFim, dataChegadaInicial, dataChegadaFinal });
+  async obterEventosTempoDirecaoDataChegada(
+    quantidade = 3000,
+    idMotorista?: number,
+    dataInicio?: string,
+    dataFim?: string,
+    dataChegadaInicial?: string,
+    dataChegadaFinal?: string
+  ): Promise<T.EventoTempoDirecao[]> {
+    return this.request<T.EventoTempoDirecao[]>('obterEventosTempoDirecaoDataChegada', {
+      quantidade,
+      idMotorista,
+      dataInicio,
+      dataFim,
+      dataChegadaInicial,
+      dataChegadaFinal
+    });
   }
 
   // --- CAIXA PRETA ---
@@ -376,11 +506,20 @@ export class SascarClient {
   /**
    * @deprecated Método desativado sem previsão de liberação pela Sascar.
    */
-  async solicitarEventosCaixaPreta(idVeiculo?: number, placa?: string, dataPosicaoInicial?: string, dataPosicaoFinal?: string): Promise<any> {
+  async solicitarEventosCaixaPreta(
+    idVeiculo?: number,
+    placa?: string,
+    dataPosicaoInicial?: string,
+    dataPosicaoFinal?: string
+  ): Promise<any> {
     return this.request<any>('solicitarEventosCaixaPreta', { idVeiculo, placa, dataPosicaoInicial, dataPosicaoFinal });
   }
 
-  async recuperarEventosCaixaPreta(idVeiculo?: number, placa?: string, dataPosicao?: string): Promise<T.CaixaPretaList[]> {
+  async recuperarEventosCaixaPreta(
+    idVeiculo?: number,
+    placa?: string,
+    dataPosicao?: string
+  ): Promise<T.CaixaPretaList[]> {
     return this.request<T.CaixaPretaList[]>('recuperarEventosCaixaPreta', { idVeiculo, placa, dataPosicao });
   }
 }

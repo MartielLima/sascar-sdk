@@ -115,14 +115,14 @@ describe('SascarClient', () => {
       <S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/"><S:Body><ns0:getVehiclesJSONResponse>
       </ns0:getVehiclesJSONResponse></S:Body></S:Envelope>
     `;
-    
+
     mockFetchSuccess(page1);
     mockFetchSuccess(page2);
     mockFetchSuccess(page3);
 
     const client = new SascarClient();
     const result = await client.obterVeiculosJson(2);
-    
+
     expect(result).toHaveLength(4);
     expect(global.fetch).toHaveBeenCalledTimes(3);
     const secondCallBody = (global.fetch as jest.Mock).mock.calls[1][1].body;
@@ -190,7 +190,9 @@ describe('SascarClient', () => {
       await expect(client.obterDeltaTelemetriaIntegracao('1', '2', 3)).resolves.toBeDefined();
       await expect(client.obterDeltaTelemetriaIntegracaoInercia('1', '2', 3)).resolves.toBeDefined();
       await expect(client.obterDeltaTelemetriaIntegracaoDataChegada('1', '2', 3, '4', '5')).resolves.toBeDefined();
-      await expect(client.obterDeltaTelemetriaIntegracaoInerciaDataChegada('1', '2', 3, '4', '5')).resolves.toBeDefined();
+      await expect(
+        client.obterDeltaTelemetriaIntegracaoInerciaDataChegada('1', '2', 3, '4', '5')
+      ).resolves.toBeDefined();
       await expect(client.obterEventoTelemetriaIntegracao('1', '2', 3)).resolves.toBeDefined();
       await expect(client.obterEventoTelemetriaDescricao()).resolves.toBeDefined();
       await expect(client.obterEventosTempoDirecao()).resolves.toBeDefined();

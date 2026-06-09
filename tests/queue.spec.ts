@@ -4,10 +4,10 @@ describe('AsyncQueue', () => {
   it('deve executar tarefas sequencialmente (controle de concorrência estrito)', async () => {
     const queue = new AsyncQueue();
     const order: number[] = [];
-    
+
     const createTask = (id: number, delayMs: number) => {
       return queue.enqueue(async () => {
-        await new Promise(res => setTimeout(res, delayMs));
+        await new Promise((res) => setTimeout(res, delayMs));
         order.push(id);
       });
     };
@@ -15,13 +15,7 @@ describe('AsyncQueue', () => {
     // Disparamos 5 chamadas simultâneas com tempos de resolução variados.
     // Se elas rodassem em paralelo, a de 10ms (id 2) terminaria antes da de 50ms (id 1).
     // Como a fila funciona como um Mutex, a ordem de terminação DEVE ser estritamente 1, 2, 3, 4, 5.
-    const promises = [
-      createTask(1, 50),
-      createTask(2, 10),
-      createTask(3, 40),
-      createTask(4, 20),
-      createTask(5, 30)
-    ];
+    const promises = [createTask(1, 50), createTask(2, 10), createTask(3, 40), createTask(4, 20), createTask(5, 30)];
 
     await Promise.all(promises);
 
