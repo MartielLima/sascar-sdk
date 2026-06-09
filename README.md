@@ -84,7 +84,7 @@ Veja `.env.example` no repositório.
 
 ## 📚 Referência Completa da API
 
-Abaixo estão listados todos os `60` métodos suportados pelo SDK.
+Abaixo estão listados todos os `63` métodos suportados pelo SDK.
 _Clique no nome do método para expandir e visualizar todos os atributos de retorno e o exemplo de código._
 
 ### 🛠️ Cadastros e Entidades
