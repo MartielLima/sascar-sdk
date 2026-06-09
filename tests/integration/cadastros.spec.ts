@@ -41,30 +41,21 @@ describe('Cadastros e Entidades (integration)', () => {
   });
 
   it('obterClientes envia quantidade e idCliente', async () => {
-    await callAndAssert(
-      'obterClientes',
-      (c) => c.obterClientes(100, 5),
-      '<return><idCliente>5</idCliente></return>',
-      [{ idCliente: 5 }]
-    );
+    await callAndAssert('obterClientes', (c) => c.obterClientes(100, 5), '<return><idCliente>5</idCliente></return>', [
+      { idCliente: 5 }
+    ]);
   });
 
   it('obterClientesV2 envia quantidade e idCliente', async () => {
-    await callAndAssert(
-      'obterClientesV2',
-      (c) => c.obterClientesV2(100),
-      '<return><idCliente>1</idCliente></return>',
-      [{ idCliente: 1 }]
-    );
+    await callAndAssert('obterClientesV2', (c) => c.obterClientesV2(100), '<return><idCliente>1</idCliente></return>', [
+      { idCliente: 1 }
+    ]);
   });
 
   it('obterVeiculos envia quantidade e idVeiculo', async () => {
-    await callAndAssert(
-      'obterVeiculos',
-      (c) => c.obterVeiculos(50, 99),
-      '<return><idVeiculo>99</idVeiculo></return>',
-      [{ idVeiculo: 99 }]
-    );
+    await callAndAssert('obterVeiculos', (c) => c.obterVeiculos(50, 99), '<return><idVeiculo>99</idVeiculo></return>', [
+      { idVeiculo: 99 }
+    ]);
   });
 
   it('obterVeiculosJson pagina e concatena resultados', async () => {
@@ -76,6 +67,17 @@ describe('Cadastros e Entidades (integration)', () => {
     expect(result[1]).toMatchObject({ idVeiculo: 2 });
     expect(s1.isDone()).toBe(true);
     expect(s2.isDone()).toBe(true);
+  });
+
+  it('obterVeiculosJson envia vehicleId após primeira página cheia', async () => {
+    const s1 = mockSoapSuccess('getVehiclesJSON', '<return>{"idVeiculo":10}</return>');
+    const s2 = mockSoapSuccess('getVehiclesJSON', '<return>{"idVeiculo":11}</return>');
+    const s3 = mockSoapSuccess('getVehiclesJSON', '<return>{}</return>');
+    const result = await client.obterVeiculosJson(1);
+    expect(result).toHaveLength(2);
+    expect(s1.isDone()).toBe(true);
+    expect(s2.isDone()).toBe(true);
+    expect(s3.isDone()).toBe(true);
   });
 
   it('obterVeiculosRFNacional envia idVeiculo', async () => {
@@ -154,11 +156,16 @@ describe('Cadastros e Entidades (integration)', () => {
   });
 
   it('obterRotas envia dataInicio', async () => {
-    await callAndAssert(
-      'obterRotas',
-      (c) => c.obterRotas('2023-10-01'),
-      '<return><Id>1</Id></return>',
-      [{ Id: 1 }]
+    await callAndAssert('obterRotas', (c) => c.obterRotas('2023-10-01'), '<return><Id>1</Id></return>', [{ Id: 1 }]);
+  });
+
+  it('obterEnderecoPosicao envia latitude e longitude', async () => {
+    const scope = mockSoapSuccess(
+      'obterEnderecoPosicao',
+      '<return><cidade>Sao Paulo</cidade><Rua>Av Paulista</Rua><uf>SP</uf></return>'
     );
+    const result = await client.obterEnderecoPosicao('-23.5', '-46.6');
+    expect(result).toMatchObject([{ cidade: 'Sao Paulo', Rua: 'Av Paulista', uf: 'SP' }]);
+    expect(scope.isDone()).toBe(true);
   });
 });

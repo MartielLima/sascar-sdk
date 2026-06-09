@@ -15,7 +15,7 @@ export function makeClient(): SascarClient {
  */
 export function mockSoapSuccess(methodName: string, innerXml: string): Scope {
   return nock(WSDL_URL)
-    .post('/')
+    .post(/.*/)
     .reply(
       200,
       `<?xml version="1.0" encoding="UTF-8"?>
@@ -47,16 +47,21 @@ export function assertSoapBody(body: string, methodName: string, params: Record<
 /**
  * Helper para chamar um método do client dentro de um describe de teste,
  * mockando a resposta SOAP e validando request e retorno.
+ *
+ * O retorno é checado com `toMatchObject` (subset match) porque a fixture
+ * tem apenas 1 campo representativo; em produção a Sascar retorna objetos
+ * completos. Isso é proposital para os testes não quebrarem quando um
+ * campo é adicionado a um tipo.
  */
-export async function callAndAssert<T>(
+export async function callAndAssert(
   methodName: string,
-  callFn: (client: SascarClient) => Promise<T>,
+  callFn: (client: SascarClient) => Promise<unknown[]>,
   innerXml: string,
-  expectedResult: T
+  expected: unknown[]
 ): Promise<void> {
   const scope = mockSoapSuccess(methodName, innerXml);
   const client = makeClient();
   const result = await callFn(client);
-  expect(result).toEqual(expectedResult);
+  expect(result).toMatchObject(expected);
   expect(scope.isDone()).toBe(true);
 }

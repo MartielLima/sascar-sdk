@@ -21,7 +21,10 @@ describe('Posições e Rastreamento (integration)', () => {
     ['obterPacotePosicoesRestricao', (c: SascarClient) => c.obterPacotePosicoesRestricao(100)],
     ['obterPacotePosicoesMotoristaRestricao', (c: SascarClient) => c.obterPacotePosicoesMotoristaRestricao(100, 5)],
     ['obterPacotePosicaoMotoristaPorRange', (c: SascarClient) => c.obterPacotePosicaoMotoristaPorRange(1, 2, 100)],
-    ['obterPacotePosicaoMotoristaPorRangeJSON', (c: SascarClient) => c.obterPacotePosicaoMotoristaPorRangeJSON(1, 2, 100)],
+    [
+      'obterPacotePosicaoMotoristaPorRangeJSON',
+      (c: SascarClient) => c.obterPacotePosicaoMotoristaPorRangeJSON(1, 2, 100)
+    ],
     ['obterPacotePosicaoPorRange', (c: SascarClient) => c.obterPacotePosicaoPorRange(1, 2, 100)],
     ['obterPacotePosicaoPorRangeJSON', (c: SascarClient) => c.obterPacotePosicaoPorRangeJSON(1, 2, 100)],
     ['obterPacoteLocalizacao', (c: SascarClient) => c.obterPacoteLocalizacao(100)]

@@ -203,6 +203,14 @@ export class SascarClient {
     return this.request<T.Rota[]>('obterRotas', { dataInicio: data });
   }
 
+  /**
+   * Consulta dados de endereço (rua, cidade, UF) a partir de coordenadas
+   * latitude/longitude. Útil para mapear pacotes de posição sem endereço.
+   */
+  async obterEnderecoPosicao(latitude: string, longitude: string): Promise<T.EnderecoPosicao[]> {
+    return this.request<T.EnderecoPosicao[]>('obterEnderecoPosicao', { latitude, longitude });
+  }
+
   // --- MÉTODOS DE COMANDOS E MACROS ---
 
   async obterStatusComando(ticket: number): Promise<T.StatusComando[]> {
