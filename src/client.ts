@@ -3,6 +3,13 @@ import { AsyncQueue } from './queue';
 import { SascarConnectionError, SascarApiError } from './errors';
 import * as T from './types';
 
+/**
+ * Cliente SOAP para o WebService SasIntegra v2.07 da Sascar/Michelin.
+ *
+ * Nomenclatura: métodos em PT (`obter*`) são a forma canônica.
+ * Métodos em inglês (`get*`) são aliases mantidos por compatibilidade
+ * com a nomenclatura do WSDL e operações SOAP oficiais.
+ */
 export class SascarClient {
   private usuario: string;
   private senha: string;
@@ -369,18 +376,31 @@ export class SascarClient {
     return this.request<T.PacoteLocalizacao[]>('obterPacoteLocalizacao', { quantidade }, true);
   }
 
+  /**
+   * Alias em inglês do método `obterPacotePosicoesJSON`. Mantido
+   * para compatibilidade com a nomenclatura original do WSDL.
+   */
   async getPositionsPacketJSON(quantity = 3000): Promise<T.PositionPacketJSON[]> {
     return this.request<T.PositionPacketJSON[]>('getPositionsPacketJSON', { quantity }, true);
   }
 
+  /**
+   * Alias em inglês do método `obterPacotePosicoesMotoristaJSON`.
+   */
   async getDriverPositionPacketJSON(quantity = 3000): Promise<T.PositionPacketJSON[]> {
     return this.request<T.PositionPacketJSON[]>('getDriverPositionPacketJSON', { quantity }, true);
   }
 
+  /**
+   * Alias em inglês do método `obterPacotePosicaoPorRangeJSON`.
+   */
   async getPositionPacketByRangeJSON(startId: number, endId: number, quantity = 3000): Promise<T.PositionPacketJSON[]> {
     return this.request<T.PositionPacketJSON[]>('getPositionPacketByRangeJSON', { startId, endId, quantity }, true);
   }
 
+  /**
+   * Alias em inglês do método `obterPacotePosicaoMotoristaPorRangeJSON`.
+   */
   async getDriverPositionPacketByRangeJSON(
     startId: number,
     endId: number,
@@ -393,6 +413,9 @@ export class SascarClient {
     );
   }
 
+  /**
+   * Alias em inglês do método `obterPacotePosicoesJSONComPlaca`.
+   */
   async getPositionPacketWithLicensePlateJSON(quantity = 3000): Promise<T.PositionPacketJSON[]> {
     return this.request<T.PositionPacketJSON[]>('getPositionPacketWithLicensePlateJSON', { quantity }, true);
   }
