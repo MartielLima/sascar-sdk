@@ -181,6 +181,43 @@ describe('SascarClient', () => {
     await expect(client.obterVeiculosJson()).rejects.toThrow(/Erro desconhecido.*plain string error/);
   });
 
+  describe('integração com transport (timeout/auth/retry)', () => {
+    it('usa timeoutMs configurado via options', async () => {
+      (global.fetch as jest.Mock).mockImplementation(
+        (_url: string, init: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            init.signal?.addEventListener('abort', () => {
+              const err = new Error('aborted');
+              err.name = 'AbortError';
+              reject(err);
+            });
+          })
+      );
+      const client = new SascarClient(undefined, { timeoutMs: 50, maxRetries: 1 });
+      await expect(client.obterClientes()).rejects.toThrow(/timeout/i);
+    });
+
+    it('lança SascarAuthError em HTTP 401', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        text: async () => ''
+      });
+      const client = new SascarClient();
+      await expect(client.obterClientes()).rejects.toThrow(/auth|401/i);
+    });
+
+    it('lança SascarRateLimitError em HTTP 429', async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        text: async () => ''
+      });
+      const client = new SascarClient();
+      await expect(client.obterClientes()).rejects.toThrow(/rate|429/i);
+    });
+  });
+
   // Testa a chamada correta para tudos os endpoints básicos delegados a request()
   describe('Cobertura completa de chamadas da API', () => {
     let client: SascarClient;
