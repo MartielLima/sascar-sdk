@@ -569,6 +569,32 @@ interface Rota {
 
 </details>
 
+<details>
+<summary><code><b>obterEnderecoPosicao(latitude: string, longitude: string)</b></code></summary>
+
+Reverse geocoding: a partir de coordenadas lat/long, retorna o endereço correspondente (rua, cidade, UF).
+
+**Exemplo de Chamada:**
+
+```typescript
+const resultado = await client.obterEnderecoPosicao('-23.5', '-46.6');
+console.log(resultado);
+```
+
+**Retorno Esperado (`T.EnderecoPosicao[]`):**
+
+```typescript
+interface EnderecoPosicao {
+  cidade: string;
+  Rua: string;
+  uf: string;
+}
+```
+
+</details>
+
+</details>
+
 ### 📍 Posições e Rastreamento
 
 <details>
@@ -2070,6 +2096,42 @@ interface PositionPacketJSON {
   licensePlate?: string;
 }
 ```
+
+</details>
+
+<details>
+<summary><code><b>obterPacotePosicoesRFNacional(quantidade = 3000)</b></code></summary>
+
+Pacote de posições de rastreadores de cargas (RF Nacional) em roaming nacional.
+
+**Exemplo de Chamada:**
+
+```typescript
+const resultado = await client.obterPacotePosicoesRFNacional(100);
+console.log(resultado);
+```
+
+**Retorno Esperado (`T.PacotePosicaoXML[]`):** ver tipo de `obterPacotePosicoes`.
+
+</details>
+
+<details>
+<summary><code><b>obterPacotePosicaoMotoristaHistorico(dataInicio: string, dataFinal: string, idVeiculo?: number)</b></code></summary>
+
+Histórico de pacotes de posições com informação extra de motorista (id/nome) e limpador de para-brisa.
+
+**Exemplo de Chamada:**
+
+```typescript
+const resultado = await client.obterPacotePosicaoMotoristaHistorico(
+  '2023-10-01 00:00:00',
+  '2023-10-02 00:00:00',
+  12345
+);
+console.log(resultado);
+```
+
+**Retorno Esperado (`T.PacotePosicaoXML[]`):** mesmo tipo de `obterPacotePosicoes`, com `idMotorista`, `nomeMotorista` e `estadoLimpadorParabrisa` populados.
 
 </details>
 
