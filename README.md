@@ -1,7 +1,9 @@
-# 🚛 Sascar Integra SDK v2.07 - Documentação Completa
+# 🚛 Sascar Integra SDK v2.07 — TypeScript
 
-SDK corporativo em TypeScript para integração com o Web Service SOAP da **SASCAR (SasIntegra v2.07)**.
+SDK corporativo em TypeScript para integração com o Web Service SOAP da **SASCAR / Michelin ConnectedFleet (SasIntegra v2.07)**.
 Este documento lista **100% dos métodos e atributos** que podem ser consumidos da API através desta biblioteca.
+
+> **Status:** SDK auditado em 2026-06-09. Cobertura 100% do manual SasIntegra v2.07 (seções 4.1–4.63). 94 testes, 0 `any` em produção, erros tipados, timeout, retry, transport isolado.
 
 ## Instalação
 
@@ -15,9 +17,68 @@ bun add github:MartielLima/sascar-sdk
 
 ```typescript
 import { SascarClient } from 'sascar-sdk';
-const client = new SascarClient({ usuario: 'foo', senha: 'bar' });
-// Opcional: as credenciais podem ser omitidas se SASCAR_USUARIO e SASCAR_SENHA estiverem no seu .env
+
+// Opção 1: credenciais explícitas
+const client = new SascarClient({ usuario: 'seu_usuario', senha: 'sua_senha' });
+
+// Opção 2: variáveis de ambiente SASCAR_USUARIO e SASCAR_SENHA (recomendado)
+const client = new SascarClient();
 ```
+
+### Opções avançadas (timeout, retry, URL customizada)
+
+```typescript
+import { SascarClient } from 'sascar-sdk';
+
+const client = new SascarClient(
+  { usuario: 'seu_usuario', senha: 'sua_senha' },
+  {
+    timeoutMs: 30_000, // default; timeout por requisição HTTP
+    maxRetries: 3, // default; retry em 5xx e erros de rede
+    wsdlUrl: 'https://sasintegra.sascar.com.br/SasIntegra/SasIntegraWSService'
+  }
+);
+```
+
+### Tratamento de erros tipados
+
+```typescript
+import {
+  SascarApiError,
+  SascarAuthError,
+  SascarConnectionError,
+  SascarRateLimitError,
+  SascarTimeoutError
+} from 'sascar-sdk';
+
+try {
+  const veiculos = await client.obterVeiculos();
+} catch (err) {
+  if (err instanceof SascarAuthError) {
+    console.error('Credenciais inválidas:', err.statusCode);
+  } else if (err instanceof SascarRateLimitError) {
+    console.error('Rate limit. Aguarde antes de tentar de novo.');
+  } else if (err instanceof SascarTimeoutError) {
+    console.error(`Timeout após ${err.timeoutMs}ms`);
+  } else if (err instanceof SascarConnectionError) {
+    console.error('Erro de rede:', err.message);
+  } else if (err instanceof SascarApiError) {
+    console.error('SOAP Fault:', err.fault?.faultstring, err.fault?.faultcode);
+  } else {
+    throw err;
+  }
+}
+```
+
+### Variáveis de ambiente
+
+```bash
+# .env
+SASCAR_USUARIO=seu_usuario
+SASCAR_SENHA=sua_senha
+```
+
+Veja `.env.example` no repositório.
 
 ---
 
