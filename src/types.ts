@@ -3,6 +3,12 @@ export interface SascarCredentials {
   senha?: string;
 }
 
+/**
+ * Tipo para o corpo de uma requisição SOAP.
+ * Cada chave é um parâmetro da operação e o valor é o dado enviado.
+ */
+export type SoapBody = Record<string, unknown>;
+
 export interface AlertaAVD {
   acoes: string;
   idAlerta: string;
@@ -98,8 +104,8 @@ export interface PacotePosicaoXML {
   conteudoMensagem?: string;
   textoMensagem?: string;
   tipoTeclado?: number;
-  eventoSequenciamento?: any[];
-  evento?: any[];
+  eventoSequenciamento?: SequenciamentoEvento[];
+  evento?: PosicaoEvento[];
   jamming?: number;
   statusAncora?: number;
   idMotorista?: number;
@@ -107,8 +113,8 @@ export interface PacotePosicaoXML {
   nivelCombustivel?: number;
   litrometro?: number;
   estadoLimpadorParabrisa?: number;
-  eventosTelemetria?: any[];
-  acessorios?: any;
+  eventosTelemetria?: EventoTelemetria[];
+  acessorios?: AcessorioVeiculo;
   placa?: string;
 }
 
@@ -163,7 +169,7 @@ export interface PacotePosicaoJSON {
   conteudoMensagem: string;
   textoMensagem: string;
   tipoTeclado: number;
-  eventoSequenciamento: any[];
+  eventoSequenciamento: SequenciamentoEvento[];
   eventos: { codigo: number }[];
   jamming: number;
   statusAncora: number;
@@ -230,8 +236,8 @@ export interface PositionPacketJSON {
   messageContent?: string;
   messageText?: string;
   mdtType?: number;
-  sequencingEvent?: any[];
-  events?: any[];
+  sequencingEvent?: SequenciamentoEvento[];
+  events?: PosicaoEvento[];
   jamming?: number;
   anchorStatus?: number;
   packetId?: number;
@@ -241,7 +247,7 @@ export interface PositionPacketJSON {
   fuelLevel?: number;
   lithometer?: number;
   windshieldWiperState?: number;
-  telemetryEvents?: any[];
+  telemetryEvents?: EventoTelemetria[];
   humiditySerial?: number;
   temperatureSerial?: number;
   licensePlate?: string;
@@ -258,8 +264,8 @@ export interface MacroTd50Tmcd {
 export interface MacroTd50TmcdDetalhado {
   idMacroTd50Tmcd: number;
   nome: string;
-  listaLayout: any[];
-  listaVeiculos: any[];
+  listaLayout: string[];
+  listaVeiculos: Veiculo[];
 }
 
 export interface MascaraDispositivo {
@@ -591,4 +597,32 @@ export interface ParametrizacaoTelemetria {
   pressaoOleoSensibilidadeInfracao?: number;
   rotacaoSensibilidadeInfracao?: number;
   tipoVeiculo?: number;
+}
+
+/**
+ * Resposta de `solicitarEventosCaixaPreta`. A Sascar não documenta o
+ * formato exato (operação marcada como @deprecated), portanto o tipo
+ * é permissivo.
+ */
+export interface CaixaPretaSolicitacao {
+  protocolo?: string;
+  mensagem?: string;
+  dataSolicitacao?: string;
+}
+
+/**
+ * Evento atômico registrado em um pacote de posição.
+ */
+export interface PosicaoEvento {
+  codigo: number;
+  descricao?: string;
+  dataHora?: string;
+}
+
+/**
+ * Estado de acessórios do veículo no momento da posição.
+ * Estrutura flexível porque o manual não padroniza o conteúdo.
+ */
+export interface AcessorioVeiculo {
+  [chave: string]: string | number | boolean | null;
 }

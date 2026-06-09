@@ -19,7 +19,7 @@ export class SascarClient {
     }
   }
 
-  private buildSoapEnvelope(methodName: string, bodyObj: any): string {
+  private buildSoapEnvelope(methodName: string, bodyObj: T.SoapBody): string {
     const builder = new XMLBuilder({
       ignoreAttributes: false,
       format: true,
@@ -44,7 +44,11 @@ export class SascarClient {
     return builder.build(envelope);
   }
 
-  private async request<TReturn>(methodName: string, params: any = {}, isPositionMethod = false): Promise<TReturn> {
+  private async request<TReturn>(
+    methodName: string,
+    params: T.SoapBody = {},
+    isPositionMethod = false
+  ): Promise<TReturn> {
     const xml = this.buildSoapEnvelope(methodName, params);
 
     const execute = async () => {
@@ -58,8 +62,9 @@ export class SascarClient {
           },
           body: xml
         });
-      } catch (err: any) {
-        throw new SascarConnectionError(`Erro de conexão com a Sascar: ${err.message}`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        throw new SascarConnectionError(`Erro de conexão com a Sascar: ${message}`);
       }
 
       const text = await response.text();
@@ -79,11 +84,13 @@ export class SascarClient {
       if (!result) return [] as unknown as TReturn;
 
       // JSON parses nested strings
-      const parseItem = (item: any) => {
+      const parseItem = (item: unknown): unknown => {
         if (typeof item === 'string' && (item.trim().startsWith('{') || item.trim().startsWith('['))) {
           try {
             return JSON.parse(item);
-          } catch (e) {}
+          } catch {
+            // intentionally ignored — fallback to original string
+          }
         }
         return item;
       };
@@ -137,8 +144,9 @@ export class SascarClient {
   async obterVeiculosJson(quantidade = 1000, startIdVeiculo = 0): Promise<T.Veiculo[]> {
     let allVehicles: T.Veiculo[] = [];
     let currentId = startIdVeiculo;
+    let keepPaginating = true;
 
-    while (true) {
+    while (keepPaginating) {
       const result = await this.request<T.Veiculo[]>('getVehiclesJSON', {
         quantidade,
         ...(currentId > 0 ? { vehicleId: currentId } : {})
@@ -147,16 +155,16 @@ export class SascarClient {
       const vehicles = Array.isArray(result) ? result : result ? [result] : [];
 
       if (vehicles.length === 0 || Object.keys(vehicles[0]).length === 0) {
-        break;
+        keepPaginating = false;
+      } else {
+        allVehicles = allVehicles.concat(vehicles);
+
+        if (vehicles.length < quantidade) {
+          keepPaginating = false;
+        } else {
+          currentId = vehicles[vehicles.length - 1].idVeiculo;
+        }
       }
-
-      allVehicles = allVehicles.concat(vehicles);
-
-      if (vehicles.length < quantidade) {
-        break;
-      }
-
-      currentId = vehicles[vehicles.length - 1].idVeiculo;
     }
 
     return allVehicles;
@@ -256,8 +264,11 @@ export class SascarClient {
     return this.request<T.LogComando[]>('comandoEmbarquePontoDiario', { idVeiculo, pontosRef });
   }
 
-  async enviarParametrizacaoTelemetria(idVeiculo: number, params: T.ParametrizacaoTelemetria): Promise<any[]> {
-    return this.request<any[]>('enviarParametrizacaoTelemetria', { idVeiculo, telemetriaParametrizacao: params });
+  async enviarParametrizacaoTelemetria(idVeiculo: number, params: T.ParametrizacaoTelemetria): Promise<T.LogComando[]> {
+    return this.request<T.LogComando[]>('enviarParametrizacaoTelemetria', {
+      idVeiculo,
+      telemetriaParametrizacao: params
+    });
   }
 
   async obterMacroTms3(): Promise<T.MacroTms3[]> {
@@ -511,8 +522,13 @@ export class SascarClient {
     placa?: string,
     dataPosicaoInicial?: string,
     dataPosicaoFinal?: string
-  ): Promise<any> {
-    return this.request<any>('solicitarEventosCaixaPreta', { idVeiculo, placa, dataPosicaoInicial, dataPosicaoFinal });
+  ): Promise<T.CaixaPretaSolicitacao> {
+    return this.request<T.CaixaPretaSolicitacao>('solicitarEventosCaixaPreta', {
+      idVeiculo,
+      placa,
+      dataPosicaoInicial,
+      dataPosicaoFinal
+    });
   }
 
   async recuperarEventosCaixaPreta(

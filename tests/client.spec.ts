@@ -1,5 +1,5 @@
 import { SascarClient } from '../src/client';
-import { SascarConnectionError, SascarApiError, SascarRateLimitError } from '../src/errors';
+import { SascarConnectionError, SascarRateLimitError } from '../src/errors';
 
 global.fetch = jest.fn();
 
