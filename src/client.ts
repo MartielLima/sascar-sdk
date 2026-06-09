@@ -371,6 +371,15 @@ export class SascarClient {
   }
 
   /**
+   * Pacote de posições de rastreadores de cargas (RF Nacional).
+   * Versão do `obterPacotePosicoes` para integração com rastreadores
+   * de cargas em roaming nacional.
+   */
+  async obterPacotePosicoesRFNacional(quantidade = 3000): Promise<T.PacotePosicaoXML[]> {
+    return this.request<T.PacotePosicaoXML[]>('obterPacotePosicoesRFNacional', { quantidade }, true);
+  }
+
+  /**
    * Alias em inglês do método `obterPacotePosicoesJSON`. Mantido
    * para compatibilidade com a nomenclatura original do WSDL.
    */

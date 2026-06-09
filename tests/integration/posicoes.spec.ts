@@ -61,4 +61,11 @@ describe('Posições e Rastreamento (integration)', () => {
     expect(result).toMatchObject([{ id: 1 }]);
     expect(scope.isDone()).toBe(true);
   });
+
+  it('obterPacotePosicoesRFNacional envia quantidade', async () => {
+    const scope = mockSoapSuccess('obterPacotePosicoesRFNacional', '<return><idVeiculo>1</idVeiculo></return>');
+    const result = await client.obterPacotePosicoesRFNacional(100);
+    expect(result).toMatchObject([{ idVeiculo: 1 }]);
+    expect(scope.isDone()).toBe(true);
+  });
 });
