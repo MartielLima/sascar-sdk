@@ -17,6 +17,9 @@ coverage/
 .idea/
 .DS_Store
 
+# git worktrees
+.worktrees/
+
 # logs
 *.log
 npm-debug.log*
