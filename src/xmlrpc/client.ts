@@ -2,7 +2,7 @@ import { AsyncQueue } from '../queue';
 import { buildMethodCall } from './envelope';
 import { parseMethodResponse, type ParsedResponse } from './parser';
 import { sendXmlRpcRequest } from './transport';
-import { SASCAR_XMLRPC_URLS, type SascarComandoEnviado, type SascarXmlRpcCommandResult, type SascarXmlRpcOperacaoResult, type SascarXmlRpcParam, type SascarXmlRpcPosicaoResult, type SascarXmlRpcSenhaResult } from './types';
+import { SASCAR_XMLRPC_URLS, type SascarComandoEnviado, type SascarComandoStatusFinal, type SascarXmlRpcCommandResult, type SascarXmlRpcOperacaoResult, type SascarXmlRpcParam, type SascarXmlRpcPosicaoResult, type SascarXmlRpcSenhaResult } from './types';
 import type { SascarCredentials } from '../types';
 
 export interface SascarXmlRpcClientOptions {
@@ -255,5 +255,69 @@ export class SascarXmlRpcClient {
   }
   async desembarcar_layout_grupo_area_avd(idVeiculo: number): Promise<SascarXmlRpcCommandResult> {
     return this.toCommandResult(await this.send('desembarcar_layout_grupo_area_avd', [idVeiculo]));
+  }
+
+  // ====== HELPERS DE ALTO NÍVEL ======
+
+  /** Helper: envia comando de bloqueio. */
+  async bloquearVeiculo(idVeiculo: number): Promise<SascarXmlRpcCommandResult> {
+    return this.bloqueio(idVeiculo);
+  }
+
+  /** Helper: envia comando de desbloqueio. */
+  async desbloquearVeiculo(idVeiculo: number): Promise<SascarXmlRpcCommandResult> {
+    return this.desbloqueio(idVeiculo);
+  }
+
+  /** Helper: envia texto para o display do veículo. */
+  async enviarMensagem(idVeiculo: number, mensagem: string, ticket?: number): Promise<SascarXmlRpcCommandResult> {
+    return this.texto(idVeiculo, mensagem, ticket);
+  }
+
+  /** Helper: alterna estado de um atuador. */
+  async alternarAtuador(
+    idVeiculo: number,
+    idAtuador: number,
+    estado: 'on' | 'off'
+  ): Promise<SascarXmlRpcCommandResult> {
+    return this.atuador(idVeiculo, [idAtuador], estado);
+  }
+
+  /**
+   * Aguarda a execução (ou recusa) de um comando via polling em status_ticket.
+   * Retorna apenas quando status converge para 1 (executado) ou 2 (recusado),
+   * ou lança timeout se `timeoutMs` for atingido.
+   */
+  async aguardarComando(
+    ticket: number,
+    idVeiculo: number,
+    opts?: { timeoutMs?: number; pollIntervalMs?: number }
+  ): Promise<SascarComandoStatusFinal> {
+    const timeoutMs = opts?.timeoutMs ?? 60_000;
+    const pollIntervalMs = opts?.pollIntervalMs ?? 3_000;
+    const start = Date.now();
+    let tentativas = 0;
+
+    while (Date.now() - start < timeoutMs) {
+      tentativas++;
+      const statuses = await this.status_ticket(ticket, ticket);
+      const match = statuses.find((s) => s.ticketServidor === ticket) ?? statuses[0];
+      if (!match) {
+        await new Promise((res) => setTimeout(res, pollIntervalMs));
+        continue;
+      }
+      if (match.status === 1 || match.status === 2) {
+        return {
+          ticket: match.ticketServidor,
+          status: match.status as 1 | 2,
+          statusDescricao: match.statusDescricao,
+          tentativas,
+          duracaoMs: Date.now() - start
+        };
+      }
+      await new Promise((res) => setTimeout(res, pollIntervalMs));
+    }
+
+    throw new Error(`Timeout aguardando ticket ${ticket} após ${timeoutMs}ms (${tentativas} tentativas).`);
   }
 }
