@@ -7,10 +7,9 @@ const FIXTURES = path.resolve(__dirname, '../__fixtures__/xmlrpc');
 const read = (f: string) => fs.readFileSync(path.join(FIXTURES, f), 'utf-8');
 
 describe('parseMethodResponse', () => {
-  it('extrai mapa idVeiculo→code e ticketServidor', () => {
+  it('extrai ticketServidor de uma resposta de sucesso', () => {
     const r = parseMethodResponse(read('bloqueio-success.xml'));
-    expect(r.resultados).toEqual({ 2248181: '1' });
-    expect(r.ticketServidor).toBe(99999);
+    expect(r.ticketServidor).toBe('99999');
   });
 
   it('extrai array de structs para listar_comandos', () => {
@@ -20,14 +19,14 @@ describe('parseMethodResponse', () => {
       methodName: 'bloqueio',
       status: 1,
       statusDescricao: 'COMANDO_EXECUTADO',
-      ticketServidor: 12345
+      ticketServidor: '12345'
     });
   });
 
   it('extrai senha quando presente (gerar_contra_senha)', () => {
     const xml = `<?xml version="1.0"?>
 <methodResponse><params><param><value><struct>
-  <member><name>2248181</name><value><int>1</int></value></member>
+  <member><name>ticketServidor</name><value><string>1</string></value></member>
   <member><name>senha</name><value><string>123456</string></value></member>
 </struct></value></param></params></methodResponse>`;
     const r = parseMethodResponse(xml);
@@ -37,7 +36,7 @@ describe('parseMethodResponse', () => {
   it('extrai mapa de mensagens (inicializar_operacao recusado)', () => {
     const xml = `<?xml version="1.0"?>
 <methodResponse><params><param><value><struct>
-  <member><name>AAA1111</name><value><int>2</int></value></member>
+  <member><name>ticketServidor</name><value><string>2</string></value></member>
   <member><name>mensagens</name><value><struct>
     <member><name>AAA1111</name><value><string>Veiculo nao pertence a gerenciadora</string></value></member>
   </struct></value></member>
@@ -49,7 +48,7 @@ describe('parseMethodResponse', () => {
   it('extrai idVeiculo/dataPosicao/lat/long para posicao()', () => {
     const xml = `<?xml version="1.0"?>
 <methodResponse><params><param><value><struct>
-  <member><name>idVeiculo</name><value><int>2248181</int></value></member>
+  <member><name>idVeiculo</name><value><string>THF0G38</string></value></member>
   <member><name>dataPosicao</name><value><string>2026-06-17 12:00:00</string></value></member>
   <member><name>dataPacote</name><value><string>2026-06-17 12:00:00</string></value></member>
   <member><name>latitude</name><value><double>-23.5</double></value></member>
@@ -61,7 +60,7 @@ describe('parseMethodResponse', () => {
 </struct></value></param></params></methodResponse>`;
     const p = parseMethodResponse(xml);
     expect(p.posicao).toMatchObject({
-      idVeiculo: 2248181,
+      idVeiculo: 'THF0G38',
       dataPosicao: '2026-06-17 12:00:00',
       dataPacote: '2026-06-17 12:00:00',
       latitude: -23.5,
@@ -77,10 +76,10 @@ describe('parseMethodResponse', () => {
     expect(() => parseMethodResponse(read('fault.xml'))).toThrow(SascarXmlRpcError);
   });
 
-  it('retorna ticket null quando ausente', () => {
+  it('retorna ticketServidor null quando ausente', () => {
     const xml = `<?xml version="1.0"?>
 <methodResponse><params><param><value><struct>
-  <member><name>2248181</name><value><int>1</int></value></member>
+  <member><name>outro</name><value><int>1</int></value></member>
 </struct></value></param></params></methodResponse>`;
     const r = parseMethodResponse(xml);
     expect(r.ticketServidor).toBeNull();

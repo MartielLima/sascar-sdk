@@ -10,8 +10,8 @@ const parser = new XMLParser({
 });
 
 export interface ParsedResponse {
-  resultados: Record<number, string>;
-  ticketServidor: number | null;
+  ticketServidor: string | null;
+  statusComando: string | null;
   senha: string | null;
   mensagens: Record<string, string>;
   comandos: SascarComandoEnviado[];
@@ -74,13 +74,13 @@ export function parseMethodResponse(xml: string): ParsedResponse {
   const parsed = parser.parse(xml);
   const param = parsed?.methodResponse?.params?.param;
   if (!param) {
-    return { resultados: {}, ticketServidor: null, senha: null, mensagens: {}, comandos: [], posicao: null };
+    return { ticketServidor: null, statusComando: null, senha: null, mensagens: {}, comandos: [], posicao: null };
   }
 
   const value = param.value;
   const empty: ParsedResponse = {
-    resultados: {},
     ticketServidor: null,
+    statusComando: null,
     senha: null,
     mensagens: {},
     comandos: [],
@@ -102,7 +102,7 @@ export function parseMethodResponse(xml: string): ParsedResponse {
         parametros: typeof out.parametros === 'object' && out.parametros !== null ? (out.parametros as Record<string, string>) : {},
         status: asNumber(out.status),
         statusDescricao: asString(out.statusDescricao),
-        ticketServidor: asNumber(out.ticketServidor)
+        ticketServidor: asString(out.ticketServidor)
       };
     });
     return { ...empty, comandos };
@@ -137,7 +137,7 @@ export function parseMethodResponse(xml: string): ParsedResponse {
     return {
       ...empty,
       posicao: {
-        idVeiculo: asNumber(fields.idVeiculo),
+        idVeiculo: asString(fields.idVeiculo), // pode ser placa (string) ou idVeiculo (número, raro)
         dataPosicao: asString(fields.dataPosicao),
         dataPacote: asString(fields.dataPacote),
         latitude: asNumber(fields.latitude),
@@ -150,24 +150,20 @@ export function parseMethodResponse(xml: string): ParsedResponse {
     };
   }
 
-  // Caso padrão: mapa idVeiculo→code + ticketServidor
-  const resultados: Record<number, string> = {};
-  let ticketServidor: number | null = null;
+  // Caso padrão: ticketServidor (string) + opcionalmente statusComando + senha
+  let ticketServidor: string | null = null;
+  let statusComando: string | null = null;
   let senha: string | null = null;
   const mensagens: Record<string, string> = {};
 
   for (const [k, v] of Object.entries(fields)) {
-    if (k === 'ticketServidor') ticketServidor = asNumber(v);
+    if (k === 'ticketServidor') ticketServidor = asString(v);
+    else if (k === 'statusComando') statusComando = asString(v);
     else if (k === 'senha') senha = asString(v);
     else if (k === 'mensagens' && typeof v === 'object' && v !== null) {
       Object.assign(mensagens, v as Record<string, string>);
-    } else if (typeof v === 'number' || typeof v === 'string') {
-      const numKey = Number(k);
-      if (!Number.isNaN(numKey) && numKey > 0) {
-        resultados[numKey] = asString(v);
-      }
     }
   }
 
-  return { resultados, ticketServidor, senha, mensagens, comandos: [], posicao: null };
+  return { ticketServidor, statusComando, senha, mensagens, comandos: [], posicao: null };
 }

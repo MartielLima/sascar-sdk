@@ -1,7 +1,7 @@
 import type { SascarComandoEnviado, SascarXmlRpcPosicaoResult } from './types';
 export interface ParsedResponse {
-    resultados: Record<number, string>;
-    ticketServidor: number | null;
+    ticketServidor: string | null;
+    statusComando: string | null;
     senha: string | null;
     mensagens: Record<string, string>;
     comandos: SascarComandoEnviado[];

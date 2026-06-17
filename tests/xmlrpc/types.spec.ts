@@ -11,19 +11,17 @@ import type {
 describe('xmlrpc types - shape compile-time', () => {
   it('SascarXmlRpcCommandResult aceita os campos obrigatórios', () => {
     const r: SascarXmlRpcCommandResult = {
-      resultados: { 2248181: '1' },
-      ticketServidor: 12345,
-      placasProcessadas: ['ABC1D23']
+      ticketServidor: '12132678',
+      ticketCliente: 12345
     };
-    expect(r.ticketServidor).toBe(12345);
-    expect(r.resultados[2248181]).toBe('1');
+    expect(r.ticketServidor).toBe('12132678');
+    expect(r.ticketCliente).toBe(12345);
   });
 
   it('SascarXmlRpcOperacaoResult estende CommandResult com mensagens', () => {
     const r: SascarXmlRpcOperacaoResult = {
-      resultados: { 1: '2' },
-      ticketServidor: 99,
-      placasProcessadas: ['AAA1111'],
+      ticketServidor: '999',
+      ticketCliente: 1,
       mensagens: { AAA1111: 'Veiculo nao pertence a gerenciadora' }
     };
     expect(r.mensagens.AAA1111).toContain('gerenciadora');
@@ -31,7 +29,7 @@ describe('xmlrpc types - shape compile-time', () => {
 
   it('SascarXmlRpcPosicaoResult aceita campos variáveis em extras', () => {
     const r: SascarXmlRpcPosicaoResult = {
-      idVeiculo: 2248181,
+      idVeiculo: 'THF0G38',
       dataPosicao: '2026-06-17 12:00:00',
       dataPacote: '2026-06-17 12:00:00',
       latitude: -23.5,
@@ -44,12 +42,10 @@ describe('xmlrpc types - shape compile-time', () => {
     expect(r.extras.saida1).toBe(240);
   });
 
-  it('SascarXmlRpcSenhaResult estende CommandResult com senha', () => {
+  it('SascarXmlRpcSenhaResult tem senha e ticketCliente', () => {
     const r: SascarXmlRpcSenhaResult = {
-      resultados: {},
-      ticketServidor: 0,
-      placasProcessadas: [],
-      senha: '123456'
+      senha: '123456',
+      ticketCliente: 999
     };
     expect(r.senha).toHaveLength(6);
   });
@@ -58,17 +54,17 @@ describe('xmlrpc types - shape compile-time', () => {
     const c: SascarComandoEnviado = {
       dataEnvio: '06/17/2026 12:00',
       methodName: 'bloqueio',
-      parametros: { placa: 'ABC1D23' },
+      parametros: { placa: 'THF0G38' },
       status: 1,
       statusDescricao: 'COMANDO_EXECUTADO',
-      ticketServidor: 999
+      ticketServidor: '12132678'
     };
     expect(c.statusDescricao).toBe('COMANDO_EXECUTADO');
   });
 
   it('SascarComandoStatus permite mensagem opcional', () => {
     const s: SascarComandoStatus = {
-      ticket: 1,
+      ticket: '12132678',
       dataExecucao: '06/17/2026 12:00',
       status: 2,
       statusDescricao: 'COMANDO_RECUSADO',
@@ -79,7 +75,7 @@ describe('xmlrpc types - shape compile-time', () => {
 
   it('SascarComandoStatusFinal aceita apenas status 1 ou 2', () => {
     const ok: SascarComandoStatusFinal = {
-      ticket: 1,
+      ticket: '12132678',
       status: 1,
       statusDescricao: 'COMANDO_EXECUTADO',
       tentativas: 3,
@@ -88,7 +84,7 @@ describe('xmlrpc types - shape compile-time', () => {
     expect(ok.status).toBe(1);
 
     const fail: SascarComandoStatusFinal = {
-      ticket: 1,
+      ticket: '12132678',
       status: 2,
       statusDescricao: 'COMANDO_RECUSADO',
       tentativas: 5,

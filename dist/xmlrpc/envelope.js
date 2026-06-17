@@ -31,12 +31,16 @@ function serializeValue(param) {
 /**
  * Constrói um <methodCall>...</methodCall> XML-RPC.
  *
- * O array `params` é serializado como membros de um <struct> (uma posição por item).
- * As credenciais `login` e `password` são adicionadas como primeiros membros do struct
- * (conforme manual Sascar seção 2.4). O `placa` (primeiro item do params) é incluído
- * como membro nomeado para comandos que esperam esse campo.
+ * O array `params` é serializado como membros de um <struct>:
+ * - Posição 0 → `<name>placa</name>`
+ * - Demais posições → `<name>param1</name>`, `<name>param2</name>`, etc.
+ *
+ * O array `named` adiciona membros com nome explícito (para campos como `ticket`,
+ * `configuracao`, `acao` que o manual Sascar exige com nome específico).
+ *
+ * As credenciais `login` e `password` são sempre os primeiros membros do struct.
  */
-function buildMethodCall(methodName, params, login, password) {
+function buildMethodCall(methodName, params, login, password, named = []) {
     const structMembers = [
         `<member><name>login</name><value><string>${escapeXml(login)}</string></value></member>`,
         `<member><name>password</name><value><string>${escapeXml(password)}</string></value></member>`
@@ -44,11 +48,11 @@ function buildMethodCall(methodName, params, login, password) {
     if (params.length > 0) {
         structMembers.push(`<member><name>placa</name>${serializeValue(params[0])}</member>`);
     }
-    // Demais params são empacotados em um array "configuracao" (padrão para inibir_sensor, atuador)
-    // e em pares chave-valor para o resto. Aqui usamos um único array "params" para máxima
-    // compatibilidade com o manual.
     for (let i = 1; i < params.length; i++) {
         structMembers.push(`<member><name>param${i}</name>${serializeValue(params[i])}</member>`);
+    }
+    for (const n of named) {
+        structMembers.push(`<member><name>${escapeXml(n.name)}</name>${serializeValue(n.value)}</member>`);
     }
     return `<?xml version="1.0" encoding="UTF-8"?>
 <methodCall>

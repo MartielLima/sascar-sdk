@@ -4,6 +4,20 @@ Todas as mudanças notáveis neste projeto são documentadas aqui.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.1.1] - 2026-06-17
+
+### Corrigido (BUGS CRÍTICOS ENCONTRADOS EM TESTE LIVE)
+
+A v1.1.0 tinha 3 bugs críticos descobertos ao testar contra o servidor real da Sascar. Todos corrigidos:
+
+- **URL dos endpoints errada**: a constante `SASCAR_XMLRPC_URLS.comando` apontava para `/xmlrpc/comando` (404). O manual v3.5 seção 2.3 define `/xmlrpc/enviar_comando`. Renomeada para `.enviarComando` para deixar claro que é o destino padrão.
+- **Roteamento errado**: `embarcar_*` e `desembarcar_*` iam para `/xmlrpc/operacao` (incorreto). Apenas os 5 comandos das seções 2.5.30–2.5.34 usam `/operacao`. Corrigido para enviar todos os outros para `/enviar_comando`.
+- **Tipo de assinatura errado**: métodos usavam `idVeiculo: number` mas o servidor espera `placa: string` (manual seção 2.5 mostra `<member><name>placa</name><value><string>...</string></value></member>`). Todas as 34+5 assinaturas atualizadas.
+- **Membro `ticket` ausente**: o servidor exige `<member><name>ticket</name>...</member>` no request. Adicionado: cada método auto-gera um ticket cliente (0..2147483647) e o envia corretamente.
+- **Tipo do `ticketServidor`**: a resposta real é `<string>12132678</string>` (não int). Tipo atualizado de `number` para `string`.
+- **Tipo do `idVeiculo` em posicao()**: a resposta real vem como string (a placa). Tipo atualizado para `string`.
+- **Modelo de resposta simplificado**: removida a `resultados: Record<string, string>` (que era fictícia — o servidor retorna apenas `ticketServidor`, não um mapa placa→code). Novo tipo `SascarXmlRpcCommandResult = { ticketServidor, statusComando?, ticketCliente }`.
+
 ## [1.1.0] - 2026-06-17
 
 ### Adicionado

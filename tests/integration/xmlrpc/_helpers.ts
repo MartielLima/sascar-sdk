@@ -1,7 +1,7 @@
 import nock, { type Scope } from 'nock';
 import { SASCAR_XMLRPC_URLS } from '../../../src/xmlrpc/types';
 
-export const COMANDO_URL = SASCAR_XMLRPC_URLS.comando;
+export const COMANDO_URL = SASCAR_XMLRPC_URLS.enviarComando;
 export const OPERACAO_URL = SASCAR_XMLRPC_URLS.operacao;
 
 /**

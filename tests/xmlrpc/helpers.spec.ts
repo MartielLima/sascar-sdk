@@ -2,7 +2,7 @@ import nock from 'nock';
 import { SascarXmlRpcClient } from '../../src/xmlrpc/client';
 import { SASCAR_XMLRPC_URLS } from '../../src/xmlrpc/types';
 
-const URL = SASCAR_XMLRPC_URLS.comando;
+const URL = SASCAR_XMLRPC_URLS.enviarComando;
 
 describe('helpers de alto nível', () => {
   let client: SascarXmlRpcClient;
@@ -22,28 +22,28 @@ describe('helpers de alto nível', () => {
   it('bloquearVeiculo() delega para bloqueio()', async () => {
     let body = '';
     nock(URL).post(/.*/, (b) => { body = b; return true; }).reply(200, ok);
-    await client.bloquearVeiculo(2248181);
+    await client.bloquearVeiculo('THF0G38');
     expect(body).toContain('<methodName>bloqueio</methodName>');
   });
 
   it('desbloquearVeiculo() delega para desbloqueio()', async () => {
     let body = '';
     nock(URL).post(/.*/, (b) => { body = b; return true; }).reply(200, ok);
-    await client.desbloquearVeiculo(2248181);
+    await client.desbloquearVeiculo('THF0G38');
     expect(body).toContain('<methodName>desbloqueio</methodName>');
   });
 
   it('enviarMensagem() delega para texto()', async () => {
     let body = '';
     nock(URL).post(/.*/, (b) => { body = b; return true; }).reply(200, ok);
-    await client.enviarMensagem(2248181, 'oi');
+    await client.enviarMensagem('THF0G38', 'oi');
     expect(body).toContain('<methodName>texto</methodName>');
   });
 
   it('alternarAtuador(id, 240, "on") envia idsAtuadores=[240]', async () => {
     let body = '';
     nock(URL).post(/.*/, (b) => { body = b; return true; }).reply(200, ok);
-    await client.alternarAtuador(2248181, 240, 'on');
+    await client.alternarAtuador('THF0G38', 240, 'on');
     expect(body).toContain('<value><int>240</int></value>');
   });
 });
@@ -66,7 +66,7 @@ describe('aguardarComando()', () => {
     <member><name>statusDescricao</name><value><string>COMANDO_EXECUTADO</string></value></member>
   </struct></value>
 </data></array></value></param></params></methodResponse>`);
-    const r = await client.aguardarComando(99999, 2248181, { pollIntervalMs: 50 });
+    const r = await client.aguardarComando('99999', 'THF0G38', { pollIntervalMs: 50 });
     expect(r.status).toBe(1);
     expect(r.statusDescricao).toBe('COMANDO_EXECUTADO');
     expect(r.tentativas).toBe(1);
@@ -82,7 +82,7 @@ describe('aguardarComando()', () => {
     <member><name>statusDescricao</name><value><string>COMANDO_RECUSADO</string></value></member>
   </struct></value>
 </data></array></value></param></params></methodResponse>`);
-    const r = await client.aguardarComando(99999, 2248181, { pollIntervalMs: 50 });
+    const r = await client.aguardarComando('99999', 'THF0G38', { pollIntervalMs: 50 });
     expect(r.status).toBe(2);
   });
 
@@ -106,7 +106,7 @@ describe('aguardarComando()', () => {
     <member><name>statusDescricao</name><value><string>COMANDO_EXECUTADO</string></value></member>
   </struct></value>
 </data></array></value></param></params></methodResponse>`);
-    const r = await client.aguardarComando(99999, 2248181, { pollIntervalMs: 30, timeoutMs: 5000 });
+    const r = await client.aguardarComando('99999', 'THF0G38', { pollIntervalMs: 30, timeoutMs: 5000 });
     expect(r.status).toBe(1);
     expect(r.tentativas).toBeGreaterThanOrEqual(2);
   });
@@ -122,7 +122,7 @@ describe('aguardarComando()', () => {
   </struct></value>
 </data></array></value></param></params></methodResponse>`);
     await expect(
-      client.aguardarComando(99999, 2248181, { pollIntervalMs: 20, timeoutMs: 200 })
+      client.aguardarComando('99999', 'THF0G38', { pollIntervalMs: 20, timeoutMs: 200 })
     ).rejects.toThrow(/Timeout/);
   });
 });

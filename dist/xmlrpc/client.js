@@ -11,7 +11,7 @@ const DEFAULT_MAX_RETRIES = 3;
 class SascarXmlRpcClient {
     login;
     password;
-    comandoUrl;
+    enviarComandoUrl;
     operacaoUrl;
     timeoutMs;
     maxRetries;
@@ -20,7 +20,7 @@ class SascarXmlRpcClient {
     constructor(credentials, options) {
         this.login = credentials?.usuario || process.env.SASCAR_USUARIO || '';
         this.password = credentials?.senha || process.env.SASCAR_SENHA || '';
-        this.comandoUrl = options?.comandoUrl || types_1.SASCAR_XMLRPC_URLS.comando;
+        this.enviarComandoUrl = options?.enviarComandoUrl || types_1.SASCAR_XMLRPC_URLS.enviarComando;
         this.operacaoUrl = options?.operacaoUrl || types_1.SASCAR_XMLRPC_URLS.operacao;
         this.timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
         this.maxRetries = options?.maxRetries ?? DEFAULT_MAX_RETRIES;
@@ -29,23 +29,27 @@ class SascarXmlRpcClient {
             throw new Error('Credenciais da SASCAR não fornecidas.');
         }
     }
-    async send(methodName, params, isPosition = false) {
-        const isOperacao = methodName === 'inicializar_operacao'
+    async send(methodName, params, isPosition = false, ticketCliente) {
+        // Apenas 5 comandos do manual v3.5 vão para /xmlrpc/operacao (seções 2.5.30–2.5.34).
+        // Todos os outros (incluindo embarcar_*/desembarcar_*) vão para /xmlrpc/enviar_comando.
+        const isOperacao = methodName === 'vincular_alerta_avd'
+            || methodName === 'desvincular_alerta_avd'
+            || methodName === 'inicializar_operacao'
             || methodName === 'finalizar_operacao'
-            || methodName === 'vincular_rota'
-            || methodName.startsWith('embarcar_')
-            || methodName.startsWith('desembarcar_')
-            || methodName === 'vincular_alerta_avd'
-            || methodName === 'desvincular_alerta_avd';
-        const url = isOperacao ? this.operacaoUrl : this.comandoUrl;
-        const xml = (0, envelope_1.buildMethodCall)(methodName, params, this.login, this.password);
+            || methodName === 'vincular_rota';
+        const url = isOperacao ? this.operacaoUrl : this.enviarComandoUrl;
+        // Gera ticket cliente se não foi fornecido (manual seção 2.5: "ticket" vai no request).
+        const ticket = ticketCliente ?? Math.floor(Math.random() * 2_147_483_647);
+        const xml = (0, envelope_1.buildMethodCall)(methodName, params, this.login, this.password, [
+            { name: 'ticket', value: ticket }
+        ]);
         const execute = async () => {
             const text = await (0, transport_1.sendXmlRpcRequest)(xml, {
                 url,
                 timeoutMs: this.timeoutMs,
                 maxRetries: this.maxRetries
             });
-            return (0, parser_1.parseMethodResponse)(text);
+            return { ...(await (0, parser_1.parseMethodResponse)(text)), ticketCliente: ticket };
         };
         if (isPosition && this.positionMutex) {
             return this.positionsQueue.enqueue(execute);
@@ -54,93 +58,98 @@ class SascarXmlRpcClient {
     }
     toCommandResult(parsed) {
         return {
-            resultados: parsed.resultados,
-            ticketServidor: parsed.ticketServidor ?? 0,
-            placasProcessadas: Object.keys(parsed.resultados).map((k) => `idVeiculo=${k}`)
+            ticketServidor: parsed.ticketServidor ?? '',
+            statusComando: parsed.statusComando ?? undefined,
+            ticketCliente: parsed.ticketCliente
         };
     }
     // ====== 2.5.2 BLOQUEIO ======
-    async bloqueio(idVeiculo) {
-        return this.toCommandResult(await this.send('bloqueio', [idVeiculo]));
+    async bloqueio(placa) {
+        return this.toCommandResult(await this.send('bloqueio', [placa]));
     }
     // ====== 2.5.3 DESBLOQUEIO ======
-    async desbloqueio(idVeiculo) {
-        return this.toCommandResult(await this.send('desbloqueio', [idVeiculo]));
+    async desbloqueio(placa) {
+        return this.toCommandResult(await this.send('desbloqueio', [placa]));
     }
     // ====== 2.5.8 RESET DE ALARME ======
-    async reset_undo_alarme(idVeiculo) {
-        return this.toCommandResult(await this.send('reset_undo_alarme', [idVeiculo]));
+    async reset_undo_alarme(placa) {
+        return this.toCommandResult(await this.send('reset_undo_alarme', [placa]));
     }
     // ====== 2.5.4 ATUAÇÃO DE SAÍDAS ======
-    async atuador(idVeiculo, idsAtuadores, estado) {
-        return this.toCommandResult(await this.send('atuador', [idVeiculo, idsAtuadores, estado]));
+    async atuador(placa, idsAtuadores, estado) {
+        return this.toCommandResult(await this.send('atuador', [placa, idsAtuadores, estado]));
     }
     // ====== 2.5.5 ENVIO DE MENSAGEM DE TEXTO ======
-    async texto(idVeiculo, mensagem, ticket) {
-        const params = [idVeiculo, mensagem];
+    async texto(placa, mensagem, ticket) {
+        const params = [placa, mensagem];
         if (ticket !== undefined)
             params.push(ticket);
         return this.toCommandResult(await this.send('texto', params));
     }
     // ====== 2.5.6 TRANSMISSÃO COM IGNIÇÃO DESLIGADA ======
-    async transmissao_ignicao_desligada(idVeiculo, estado) {
-        return this.toCommandResult(await this.send('transmissao_ignicao_desligada', [idVeiculo, estado]));
+    async transmissao_ignicao_desligada(placa, estado) {
+        return this.toCommandResult(await this.send('transmissao_ignicao_desligada', [placa, estado]));
     }
     // ====== 2.5.14 INIBIÇÃO DE SENSORES ======
-    async inibir_sensor(idVeiculo, ids, acao) {
-        return this.toCommandResult(await this.send('inibir_sensor', [idVeiculo, ids, acao]));
+    async inibir_sensor(placa, ids, acao) {
+        return this.toCommandResult(await this.send('inibir_sensor', [placa, ids, acao]));
     }
     // ====== 2.5.15 MODO SEGURO ======
-    async modoSeguro(idVeiculo, ativar) {
-        return this.toCommandResult(await this.send('modoSeguro', [idVeiculo, ativar]));
+    async modoSeguro(placa, ativar) {
+        return this.toCommandResult(await this.send('modoSeguro', [placa, ativar]));
     }
     // ====== 2.5.11 INTERVALO DE ANÁLISE SATELITAL ======
-    async analise_satelital(idVeiculo, intervaloSegundos) {
-        return this.toCommandResult(await this.send('analise_satelital', [idVeiculo, intervaloSegundos]));
+    async analise_satelital(placa, intervaloSegundos) {
+        return this.toCommandResult(await this.send('analise_satelital', [placa, intervaloSegundos]));
     }
     // ====== 2.5.12 INTERVALO DE TRANSMISSÃO SATELITAL ======
-    async relatorio_satelital(idVeiculo, intervaloSegundos) {
-        return this.toCommandResult(await this.send('relatorio_satelital', [idVeiculo, intervaloSegundos]));
+    async relatorio_satelital(placa, intervaloSegundos) {
+        return this.toCommandResult(await this.send('relatorio_satelital', [placa, intervaloSegundos]));
     }
     // ====== 2.5.13 TEMPO DE TRANSMISSÃO GPRS ======
-    async relatorio(idVeiculo, tempoSegundos) {
-        return this.toCommandResult(await this.send('relatorio', [idVeiculo, tempoSegundos]));
+    async relatorio(placa, tempoSegundos) {
+        return this.toCommandResult(await this.send('relatorio', [placa, tempoSegundos]));
     }
     // ====== 2.5.10 GERAR CONTRA SENHA MTC600 ======
-    async gerar_contra_senha_mtc600(idVeiculo) {
-        const parsed = await this.send('gerar_contra_senha_mtc600', [idVeiculo]);
-        return { ...this.toCommandResult(parsed), senha: parsed.senha ?? '' };
+    async gerar_contra_senha_mtc600(placa) {
+        const parsed = await this.send('gerar_contra_senha_mtc600', [placa]);
+        return { senha: parsed.senha ?? '', ticketCliente: parsed.ticketCliente };
     }
     // ====== 2.5.9 GERAR CONTRA SENHA TD40/TMCD ======
-    async gerar_contra_senha(idVeiculo) {
-        const parsed = await this.send('gerar_contra_senha', [idVeiculo]);
-        return { ...this.toCommandResult(parsed), senha: parsed.senha ?? '' };
+    async gerar_contra_senha(placa) {
+        const parsed = await this.send('gerar_contra_senha', [placa]);
+        return { senha: parsed.senha ?? '', ticketCliente: parsed.ticketCliente };
     }
     // ====== 2.5.1 POSIÇÃO (usa mutex) ======
-    async posicao(idVeiculo) {
-        const parsed = await this.send('posicao', [idVeiculo], true);
+    async posicao(placa) {
+        const parsed = await this.send('posicao', [placa], true);
         if (!parsed.posicao) {
             throw new Error('Resposta de posicao() inválida (sem campos obrigatórios).');
         }
         return parsed.posicao;
     }
     // ====== 2.5.29 STATUS TICKET ======
-    async status_ticket(ticketConsulta, ticketInterno) {
-        const parsed = await this.send('status_ticket', [ticketConsulta, ticketInterno]);
-        return parsed.comandos;
+    async status_ticket(ticketConsulta, ticketServidor) {
+        const parsed = await this.send('status_ticket', [ticketConsulta, ticketServidor]);
+        return parsed.comandos.map((c) => ({
+            ticket: c.ticketServidor,
+            dataExecucao: c.dataEnvio,
+            status: c.status,
+            statusDescricao: c.statusDescricao
+        }));
     }
     // ====== 2.5.7 LISTAGEM DE COMANDOS ENVIADOS ======
-    async listar_comandos(idVeiculo, quantidade, dataInicial, dataFinal) {
-        const parsed = await this.send('listar_comandos', [idVeiculo, quantidade, dataInicial, dataFinal]);
+    async listar_comandos(placa, quantidade, dataInicial, dataFinal) {
+        const parsed = await this.send('listar_comandos', [placa, quantidade, dataInicial, dataFinal]);
         return parsed.comandos;
     }
     // ====== 2.5.30 VINCULAR ALERTA AVD ======
-    async vincular_alerta_avd(idVeiculo, idAlertaAvd) {
-        return this.toCommandResult(await this.send('vincular_alerta_avd', [idVeiculo, idAlertaAvd]));
+    async vincular_alerta_avd(placa, idAlertaAvd) {
+        return this.toCommandResult(await this.send('vincular_alerta_avd', [placa, idAlertaAvd]));
     }
     // ====== 2.5.31 DESVINCULAR ALERTA AVD ======
-    async desvincular_alerta_avd(idVeiculo, idAlertaAvd) {
-        return this.toCommandResult(await this.send('desvincular_alerta_avd', [idVeiculo, idAlertaAvd]));
+    async desvincular_alerta_avd(placa, idAlertaAvd) {
+        return this.toCommandResult(await this.send('desvincular_alerta_avd', [placa, idAlertaAvd]));
     }
     // ====== 2.5.32 INICIALIZAR OPERAÇÃO ======
     async inicializar_operacao(placas) {
@@ -158,81 +167,82 @@ class SascarXmlRpcClient {
         return { ...this.toCommandResult(parsed), mensagens: parsed.mensagens };
     }
     // ====== 2.5.16–2.5.27 EMBARCAR LAYOUTS ======
-    async embarcar_layout_acao_embarcada_avd(idVeiculo, idLayout) {
-        return this.toCommandResult(await this.send('embarcar_layout_acao_embarcada_avd', [idVeiculo, idLayout]));
+    async embarcar_layout_acao_embarcada_avd(placa, idLayout) {
+        return this.toCommandResult(await this.send('embarcar_layout_acao_embarcada_avd', [placa, idLayout]));
     }
-    async embarcar_layout_grupo_ponto(idVeiculo, idLayout) {
-        return this.toCommandResult(await this.send('embarcar_layout_grupo_ponto', [idVeiculo, idLayout]));
+    async embarcar_layout_grupo_ponto(placa, idLayout) {
+        return this.toCommandResult(await this.send('embarcar_layout_grupo_ponto', [placa, idLayout]));
     }
-    async embarcar_motorista(idVeiculo, idMotorista) {
-        return this.toCommandResult(await this.send('embarcar_motorista', [idVeiculo, idMotorista]));
+    async embarcar_motorista(placa, idMotorista) {
+        return this.toCommandResult(await this.send('embarcar_motorista', [placa, idMotorista]));
     }
-    async embarcar_layout_tmcd(idVeiculo, idLayout) {
-        return this.toCommandResult(await this.send('embarcar_layout_tmcd', [idVeiculo, idLayout]));
+    async embarcar_layout_tmcd(placa, idLayout) {
+        return this.toCommandResult(await this.send('embarcar_layout_tmcd', [placa, idLayout]));
     }
-    async embarcar_layout_td40(idVeiculo, idLayout) {
-        return this.toCommandResult(await this.send('embarcar_layout_td40', [idVeiculo, idLayout]));
+    async embarcar_layout_td40(placa, idLayout) {
+        return this.toCommandResult(await this.send('embarcar_layout_td40', [placa, idLayout]));
     }
-    async embarcar_layout_td50(idVeiculo, idLayout) {
-        return this.toCommandResult(await this.send('embarcar_layout_td50', [idVeiculo, idLayout]));
+    async embarcar_layout_td50(placa, idLayout) {
+        return this.toCommandResult(await this.send('embarcar_layout_td50', [placa, idLayout]));
     }
-    async embarcar_sequenciamento_td50(idVeiculo, idLayout) {
-        return this.toCommandResult(await this.send('embarcar_sequenciamento_td50', [idVeiculo, idLayout]));
+    async embarcar_sequenciamento_td50(placa, idLayout) {
+        return this.toCommandResult(await this.send('embarcar_sequenciamento_td50', [placa, idLayout]));
     }
-    async embarcar_sequenciamento_macro_sasmdt(idVeiculo, idLayout) {
-        return this.toCommandResult(await this.send('embarcar_sequenciamento_macro_sasmdt', [idVeiculo, idLayout]));
+    async embarcar_sequenciamento_macro_sasmdt(placa, idLayout) {
+        return this.toCommandResult(await this.send('embarcar_sequenciamento_macro_sasmdt', [placa, idLayout]));
     }
-    async embarcar_layout_grupo_area_avd(idVeiculo, idLayout) {
-        return this.toCommandResult(await this.send('embarcar_layout_grupo_area_avd', [idVeiculo, idLayout]));
+    async embarcar_layout_grupo_area_avd(placa, idLayout) {
+        return this.toCommandResult(await this.send('embarcar_layout_grupo_area_avd', [placa, idLayout]));
     }
     // ====== 2.5.17/19/28 DESEMBARCAR LAYOUTS ======
-    async desembarcar_layout_acao_embarcada_avd(idVeiculo) {
-        return this.toCommandResult(await this.send('desembarcar_layout_acao_embarcada_avd', [idVeiculo]));
+    async desembarcar_layout_acao_embarcada_avd(placa) {
+        return this.toCommandResult(await this.send('desembarcar_layout_acao_embarcada_avd', [placa]));
     }
-    async desembarcar_layout_grupo_ponto(idVeiculo) {
-        return this.toCommandResult(await this.send('desembarcar_layout_grupo_ponto', [idVeiculo]));
+    async desembarcar_layout_grupo_ponto(placa) {
+        return this.toCommandResult(await this.send('desembarcar_layout_grupo_ponto', [placa]));
     }
-    async desembarcar_layout_grupo_area_avd(idVeiculo) {
-        return this.toCommandResult(await this.send('desembarcar_layout_grupo_area_avd', [idVeiculo]));
+    async desembarcar_layout_grupo_area_avd(placa) {
+        return this.toCommandResult(await this.send('desembarcar_layout_grupo_area_avd', [placa]));
     }
     // ====== HELPERS DE ALTO NÍVEL ======
     /** Helper: envia comando de bloqueio. */
-    async bloquearVeiculo(idVeiculo) {
-        return this.bloqueio(idVeiculo);
+    async bloquearVeiculo(placa) {
+        return this.bloqueio(placa);
     }
     /** Helper: envia comando de desbloqueio. */
-    async desbloquearVeiculo(idVeiculo) {
-        return this.desbloqueio(idVeiculo);
+    async desbloquearVeiculo(placa) {
+        return this.desbloqueio(placa);
     }
     /** Helper: envia texto para o display do veículo. */
-    async enviarMensagem(idVeiculo, mensagem, ticket) {
-        return this.texto(idVeiculo, mensagem, ticket);
+    async enviarMensagem(placa, mensagem, ticket) {
+        return this.texto(placa, mensagem, ticket);
     }
     /** Helper: alterna estado de um atuador. */
-    async alternarAtuador(idVeiculo, idAtuador, estado) {
-        return this.atuador(idVeiculo, [idAtuador], estado);
+    async alternarAtuador(placa, idAtuador, estado) {
+        return this.atuador(placa, [idAtuador], estado);
     }
     /**
      * Aguarda a execução (ou recusa) de um comando via polling em status_ticket.
      * Retorna apenas quando status converge para 1 (executado) ou 2 (recusado),
      * ou lança timeout se `timeoutMs` for atingido.
      */
-    async aguardarComando(ticket, idVeiculo, opts) {
+    async aguardarComando(ticketServidor, placa, opts) {
         const timeoutMs = opts?.timeoutMs ?? 60_000;
         const pollIntervalMs = opts?.pollIntervalMs ?? 3_000;
         const start = Date.now();
         let tentativas = 0;
+        const ticketCliente = opts?.ticketCliente ?? 0;
         while (Date.now() - start < timeoutMs) {
             tentativas++;
-            const statuses = await this.status_ticket(ticket, ticket);
-            const match = statuses.find((s) => s.ticketServidor === ticket) ?? statuses[0];
+            const statuses = await this.status_ticket(ticketCliente, ticketServidor);
+            const match = statuses.find((s) => s.ticket === ticketServidor) ?? statuses[0];
             if (!match) {
                 await new Promise((res) => setTimeout(res, pollIntervalMs));
                 continue;
             }
             if (match.status === 1 || match.status === 2) {
                 return {
-                    ticket: match.ticketServidor,
+                    ticket: match.ticket,
                     status: match.status,
                     statusDescricao: match.statusDescricao,
                     tentativas,
@@ -241,7 +251,7 @@ class SascarXmlRpcClient {
             }
             await new Promise((res) => setTimeout(res, pollIntervalMs));
         }
-        throw new Error(`Timeout aguardando ticket ${ticket} após ${timeoutMs}ms (${tentativas} tentativas).`);
+        throw new Error(`Timeout aguardando ticket ${ticketServidor} após ${timeoutMs}ms (${tentativas} tentativas).`);
     }
 }
 exports.SascarXmlRpcClient = SascarXmlRpcClient;
