@@ -24,11 +24,6 @@ export function mockXmlRpcSuccess(methodName: string, innerStructXml: string): S
   return nock(COMANDO_URL).post(/.*/).reply(200, xml, { 'Content-Type': 'text/xml;charset=UTF-8' });
 }
 
-export function mockXmlRpcOperacaoSuccess(methodName: string, innerStructXml: string): Scope {
-  return mockXmlRpcSuccess(methodName, innerStructXml).persist();
-  // ^^^ mantém; na verdade cada teste vai sobrescrever. Este helper é apenas um atalho.
-}
-
 /**
  * Valida o corpo de uma request XML-RPC:
  * - contém <methodName>X</methodName>
