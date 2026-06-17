@@ -4,6 +4,19 @@ Todas as mudanças notáveis neste projeto são documentadas aqui.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
+## [1.1.0] - 2026-06-17
+
+### Adicionado
+
+- **Módulo XML-RPC completo**: 34 comandos do manual Sascar v3.5, incluindo `bloqueio`, `desbloqueio`, `atuador`, `texto`, `embarcar_*` (9 métodos), `desembarcar_*` (3 métodos), `inicializar_operacao`, `finalizar_operacao`, `vincular_rota`, `vincular_alerta_avd`, e mais.
+- **`SascarXmlRpcClient`**: nova classe paralela a `SascarClient` (SOAP) com endpoints `/xmlrpc/comando` e `/xmlrpc/operacao`. Suporta `timeoutMs`, `maxRetries`, `positionMutex` para o mutex de `posicao()`.
+- **Helpers PT-BR**: `bloquearVeiculo(id)`, `desbloquearVeiculo(id)`, `enviarMensagem(id, msg, ticket?)`, `alternarAtuador(id, idAtuador, on|off)`.
+- **`aguardarComando(ticket, id, opts?)`**: polling automático em `status_ticket` que converge para `1` (executado) ou `2` (recusado), com `timeoutMs` e `pollIntervalMs` configuráveis.
+- **Cobertura 100% do manual XML-RPC v3.5 (seções 2.5.1–2.5.34)**: 34 métodos 1:1 com o `methodName` do manual + 5 helpers ergonômicos.
+- **`SascarXmlRpcError`**: subclasse de `SascarApiError` para catching unificado entre SOAP e XML-RPC.
+- **Tipos públicos**: `SascarXmlRpcCommandResult`, `SascarXmlRpcOperacaoResult`, `SascarXmlRpcPosicaoResult`, `SascarXmlRpcSenhaResult`, `SascarComandoEnviado`, `SascarComandoStatus`, `SascarComandoStatusFinal`, `SascarXmlRpcParam`, `SASCAR_XMLRPC_URLS`.
+- **202 testes** (era 121), 0 `any` em produção, transport isolado com retry/timeout, parser XML via `fast-xml-parser`.
+
 ## [Não liberado]
 
 ### Corrigido
