@@ -2,7 +2,7 @@ import { AsyncQueue } from '../queue';
 import { buildMethodCall } from './envelope';
 import { parseMethodResponse, type ParsedResponse } from './parser';
 import { sendXmlRpcRequest } from './transport';
-import { SASCAR_XMLRPC_URLS, type SascarXmlRpcCommandResult, type SascarXmlRpcParam } from './types';
+import { SASCAR_XMLRPC_URLS, type SascarXmlRpcCommandResult, type SascarXmlRpcParam, type SascarXmlRpcSenhaResult } from './types';
 import type { SascarCredentials } from '../types';
 
 export interface SascarXmlRpcClientOptions {
@@ -134,5 +134,26 @@ export class SascarXmlRpcClient {
   // ====== 2.5.15 MODO SEGURO ======
   async modoSeguro(idVeiculo: number, ativar: boolean): Promise<SascarXmlRpcCommandResult> {
     return this.toCommandResult(await this.send('modoSeguro', [idVeiculo, ativar]));
+  }
+
+  // ====== 2.5.11 INTERVALO DE ANÁLISE SATELITAL ======
+  async analise_satelital(idVeiculo: number, intervaloSegundos: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('analise_satelital', [idVeiculo, intervaloSegundos]));
+  }
+
+  // ====== 2.5.12 INTERVALO DE TRANSMISSÃO SATELITAL ======
+  async relatorio_satelital(idVeiculo: number, intervaloSegundos: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('relatorio_satelital', [idVeiculo, intervaloSegundos]));
+  }
+
+  // ====== 2.5.13 TEMPO DE TRANSMISSÃO GPRS ======
+  async relatorio(idVeiculo: number, tempoSegundos: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('relatorio', [idVeiculo, tempoSegundos]));
+  }
+
+  // ====== 2.5.10 GERAR CONTRA SENHA MTC600 ======
+  async gerar_contra_senha_mtc600(idVeiculo: number): Promise<SascarXmlRpcSenhaResult> {
+    const parsed = await this.send('gerar_contra_senha_mtc600', [idVeiculo]);
+    return { ...this.toCommandResult(parsed), senha: parsed.senha ?? '' };
   }
 }

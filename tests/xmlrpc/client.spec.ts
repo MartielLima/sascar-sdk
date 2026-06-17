@@ -153,3 +153,52 @@ describe('SascarXmlRpcClient - atuadores e mensagens', () => {
     expect(body).toContain('<value><boolean>1</boolean></value>');
   });
 });
+
+describe('SascarXmlRpcClient - configuração satelital/GPRS', () => {
+  let client: SascarXmlRpcClient;
+  beforeEach(() => {
+    nock.cleanAll();
+    client = new SascarXmlRpcClient({ usuario: 'test_user', senha: 'test_pass' }, { maxRetries: 1, timeoutMs: 1000 });
+  });
+  afterEach(() => nock.cleanAll());
+
+  const successBody = `<?xml version="1.0"?>
+<methodResponse><params><param><value><struct>
+  <member><name>2248181</name><value><int>1</int></value></member>
+  <member><name>ticketServidor</name><value><int>1</int></value></member>
+</struct></value></param></params></methodResponse>`;
+
+  it('analise_satelital() envia intervalo como int', async () => {
+    let body = '';
+    nock(URL).post(/.*/, (b) => { body = b; return true; }).reply(200, successBody);
+    await client.analise_satelital(2248181, 60);
+    expect(body).toContain('<methodName>analise_satelital</methodName>');
+    expect(body).toContain('<value><int>60</int></value>');
+  });
+
+  it('relatorio_satelital() envia intervalo como int', async () => {
+    let body = '';
+    nock(URL).post(/.*/, (b) => { body = b; return true; }).reply(200, successBody);
+    await client.relatorio_satelital(2248181, 300);
+    expect(body).toContain('<methodName>relatorio_satelital</methodName>');
+    expect(body).toContain('<value><int>300</int></value>');
+  });
+
+  it('relatorio() envia tempo como int', async () => {
+    let body = '';
+    nock(URL).post(/.*/, (b) => { body = b; return true; }).reply(200, successBody);
+    await client.relatorio(2248181, 30);
+    expect(body).toContain('<methodName>relatorio</methodName>');
+    expect(body).toContain('<value><int>30</int></value>');
+  });
+
+  it('gerar_contra_senha_mtc600() retorna senha do parser', async () => {
+    nock(URL).post(/.*/).reply(200, `<?xml version="1.0"?>
+<methodResponse><params><param><value><struct>
+  <member><name>2248181</name><value><int>1</int></value></member>
+  <member><name>senha</name><value><string>654321</string></value></member>
+</struct></value></param></params></methodResponse>`);
+    const r = await client.gerar_contra_senha_mtc600(2248181);
+    expect(r.senha).toBe('654321');
+  });
+});
