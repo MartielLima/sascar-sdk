@@ -17,5 +17,6 @@ describe('SascarXmlRpcError', () => {
   it('aceita rawFault undefined', () => {
     const err = new SascarXmlRpcError('falhou', 'desbloqueio');
     expect(err.rawFault).toBeUndefined();
+    expect(err.methodName).toBe('desbloqueio');
   });
 });

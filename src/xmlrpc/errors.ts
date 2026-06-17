@@ -1,6 +1,7 @@
 import { SascarApiError } from '../errors';
 
-export interface XmlRpcFault {
+/** Estrutura de fault retornada por respostas <methodResponse><fault>...</fault></methodResponse>. */
+export interface SascarXmlRpcFault {
   faultCode: number;
   faultString: string;
 }
@@ -10,12 +11,13 @@ export interface XmlRpcFault {
  * Estende SascarApiError para permitir `try/catch` unificado entre SOAP e XML-RPC.
  */
 export class SascarXmlRpcError extends SascarApiError {
-  constructor(
-    message: string,
-    public readonly methodName: string,
-    public readonly rawFault?: XmlRpcFault
-  ) {
+  readonly methodName: string;
+  readonly rawFault?: SascarXmlRpcFault;
+
+  constructor(message: string, methodName: string, rawFault?: SascarXmlRpcFault) {
     super(message);
     this.name = 'SascarXmlRpcError';
+    this.methodName = methodName;
+    this.rawFault = rawFault;
   }
 }
