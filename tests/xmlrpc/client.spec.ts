@@ -202,3 +202,74 @@ describe('SascarXmlRpcClient - configuração satelital/GPRS', () => {
     expect(r.senha).toBe('654321');
   });
 });
+
+describe('SascarXmlRpcClient - posicao e gerar_contra_senha', () => {
+  let client: SascarXmlRpcClient;
+  beforeEach(() => {
+    nock.cleanAll();
+    client = new SascarXmlRpcClient({ usuario: 'test_user', senha: 'test_pass' }, { maxRetries: 1, timeoutMs: 1000 });
+  });
+  afterEach(() => nock.cleanAll());
+
+  it('gerar_contra_senha() retorna senha TD40/TMCD', async () => {
+    nock(URL).post(/.*/).reply(200, `<?xml version="1.0"?>
+<methodResponse><params><param><value><struct>
+  <member><name>2248181</name><value><int>1</int></value></member>
+  <member><name>senha</name><value><string>987654</string></value></member>
+</struct></value></param></params></methodResponse>`);
+    const r = await client.gerar_contra_senha(2248181);
+    expect(r.senha).toBe('987654');
+    expect(r.resultados[2248181]).toBe('1');
+  });
+
+  it('posicao() retorna SascarXmlRpcPosicaoResult com extras', async () => {
+    nock(URL).post(/.*/).reply(200, `<?xml version="1.0"?>
+<methodResponse><params><param><value><struct>
+  <member><name>idVeiculo</name><value><int>2248181</int></value></member>
+  <member><name>dataPosicao</name><value><string>2026-06-17 12:00:00</string></value></member>
+  <member><name>dataPacote</name><value><string>2026-06-17 12:00:00</string></value></member>
+  <member><name>latitude</name><value><double>-23.5</double></value></member>
+  <member><name>longitude</name><value><double>-46.6</double></value></member>
+  <member><name>direcao</name><value><int>4</int></value></member>
+  <member><name>velocidade</name><value><int>80</int></value></member>
+  <member><name>ignicao</name><value><int>1</int></value></member>
+  <member><name>saida1</name><value><int>240</int></value></member>
+  <member><name>tensao</name><value><int>24</int></value></member>
+</struct></value></param></params></methodResponse>`);
+    const p = await client.posicao(2248181);
+    expect(p.idVeiculo).toBe(2248181);
+    expect(p.latitude).toBe(-23.5);
+    expect(p.extras.saida1).toBe(240);
+    expect(p.extras.tensao).toBe(24);
+  });
+
+  it('posicao() usa mutex (execuções sequenciais)', async () => {
+    const start = Date.now();
+    nock(URL)
+      .post(/.*/).delay(100).reply(200, `<?xml version="1.0"?>
+<methodResponse><params><param><value><struct>
+  <member><name>idVeiculo</name><value><int>1</int></value></member>
+  <member><name>dataPosicao</name><value><string>x</string></value></member>
+  <member><name>dataPacote</name><value><string>x</string></value></member>
+  <member><name>latitude</name><value><double>0</double></value></member>
+  <member><name>longitude</name><value><double>0</double></value></member>
+  <member><name>direcao</name><value><int>0</int></value></member>
+  <member><name>velocidade</name><value><int>0</int></value></member>
+  <member><name>ignicao</name><value><int>0</int></value></member>
+</struct></value></param></params></methodResponse>`)
+      .post(/.*/).reply(200, `<?xml version="1.0"?>
+<methodResponse><params><param><value><struct>
+  <member><name>idVeiculo</name><value><int>1</int></value></member>
+  <member><name>dataPosicao</name><value><string>y</string></value></member>
+  <member><name>dataPacote</name><value><string>y</string></value></member>
+  <member><name>latitude</name><value><double>0</double></value></member>
+  <member><name>longitude</name><value><double>0</double></value></member>
+  <member><name>direcao</name><value><int>0</int></value></member>
+  <member><name>velocidade</name><value><int>0</int></value></member>
+  <member><name>ignicao</name><value><int>0</int></value></member>
+</struct></value></param></params></methodResponse>`);
+    await Promise.all([client.posicao(1), client.posicao(1)]);
+    const elapsed = Date.now() - start;
+    expect(elapsed).toBeGreaterThanOrEqual(100);
+  });
+});

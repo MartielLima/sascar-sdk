@@ -2,7 +2,7 @@ import { AsyncQueue } from '../queue';
 import { buildMethodCall } from './envelope';
 import { parseMethodResponse, type ParsedResponse } from './parser';
 import { sendXmlRpcRequest } from './transport';
-import { SASCAR_XMLRPC_URLS, type SascarXmlRpcCommandResult, type SascarXmlRpcParam, type SascarXmlRpcSenhaResult } from './types';
+import { SASCAR_XMLRPC_URLS, type SascarXmlRpcCommandResult, type SascarXmlRpcParam, type SascarXmlRpcPosicaoResult, type SascarXmlRpcSenhaResult } from './types';
 import type { SascarCredentials } from '../types';
 
 export interface SascarXmlRpcClientOptions {
@@ -155,5 +155,20 @@ export class SascarXmlRpcClient {
   async gerar_contra_senha_mtc600(idVeiculo: number): Promise<SascarXmlRpcSenhaResult> {
     const parsed = await this.send('gerar_contra_senha_mtc600', [idVeiculo]);
     return { ...this.toCommandResult(parsed), senha: parsed.senha ?? '' };
+  }
+
+  // ====== 2.5.9 GERAR CONTRA SENHA TD40/TMCD ======
+  async gerar_contra_senha(idVeiculo: number): Promise<SascarXmlRpcSenhaResult> {
+    const parsed = await this.send('gerar_contra_senha', [idVeiculo]);
+    return { ...this.toCommandResult(parsed), senha: parsed.senha ?? '' };
+  }
+
+  // ====== 2.5.1 POSIÇÃO (usa mutex) ======
+  async posicao(idVeiculo: number): Promise<SascarXmlRpcPosicaoResult> {
+    const parsed = await this.send('posicao', [idVeiculo], true);
+    if (!parsed.posicao) {
+      throw new Error('Resposta de posicao() inválida (sem campos obrigatórios).');
+    }
+    return parsed.posicao;
   }
 }
