@@ -5,6 +5,7 @@ import {
   SascarRateLimitError,
   SascarTimeoutError
 } from '../errors';
+import { parseSoapFault } from './fault';
 
 export interface SendSoapOptions {
   url: string;
@@ -30,6 +31,16 @@ function computeBackoffMs(attempt: number): number {
 }
 
 /**
+ * Detecta rapidamente se um corpo de resposta XML contém um SOAP Fault,
+ * sem rodar o parser completo. Usado para decidir se devemos parar de
+ * retentar em respostas 5xx que carregam fault aplicacional.
+ */
+function bodyHasSoapFault(body: string): boolean {
+  if (!body) return false;
+  return /<(?:[A-Za-z][\w-]*:)?Fault[\s>]/.test(body);
+}
+
+/**
  * Envia uma requisição SOAP e retorna o corpo da resposta como string.
  *
  * Comportamento:
@@ -37,7 +48,10 @@ function computeBackoffMs(attempt: number): number {
  *  - Em status 401/403 lança SascarAuthError.
  *  - Em status 429 lança SascarRateLimitError.
  *  - Em status 5xx transiente, faz retry com backoff exponencial (até maxRetries).
- *  - Em outros status não-ok, lança SascarApiError.
+ *    EXCEÇÃO: se o corpo da resposta 5xx contém um SOAP Fault, NÃO retenta —
+ *    o fault é aplicacional (ex.: permissão negada) e seria perpetuado. O
+ *    fault é parseado e propagado em SascarApiError.fault.
+ *  - Em outros status não-ok, lança SascarApiError (também tenta extrair fault).
  *  - Em erro de rede, lança SascarConnectionError.
  *  - Em timeout, lança SascarTimeoutError.
  */
@@ -77,6 +91,18 @@ export async function sendSoapRequest(xml: string, options: SendSoapOptions): Pr
 
       if (status === 429) {
         throw new SascarRateLimitError(`HTTP 429 (rate limit) em ${url}`);
+      }
+
+      const body = await response.text().catch(() => '');
+
+      if (bodyHasSoapFault(body)) {
+        const fault = parseSoapFault(body);
+        if (fault) {
+          throw new SascarApiError(
+            `HTTP ${status} em ${url} — SOAP Fault: ${fault.faultstring} (${fault.faultcode})`,
+            fault
+          );
+        }
       }
 
       if (isTransientStatus(status) && attempt < maxRetries - 1) {

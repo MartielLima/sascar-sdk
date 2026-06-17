@@ -125,4 +125,99 @@ export declare class SascarClient {
      */
     solicitarEventosCaixaPreta(idVeiculo?: number, placa?: string, dataPosicaoInicial?: string, dataPosicaoFinal?: string): Promise<T.CaixaPretaSolicitacao>;
     recuperarEventosCaixaPreta(idVeiculo?: number, placa?: string, dataPosicao?: string): Promise<T.CaixaPretaList[]>;
+    /**
+     * Consulta quantos pacotes de posição estão pendentes na fila do servidor
+     * para consumo. Útil para monitoramento da fila antes de drenar com
+     * `obterPacotePosicoes*`.
+     */
+    consultaQuantidadePacotesPosicoesPendentes(): Promise<T.PacotePendente[]>;
+    /**
+     * Eventos de SmartCameras (câmeras embarcadas Sascar). Operação ampla com
+     * múltiplos filtros opcionais. O único campo obrigatório na prática é
+     * `agrupador` (identificador do cliente/conta).
+     */
+    getSmartCamerasEvents(params: T.SmartCamerasEventsParams): Promise<T.SmartCamerasEvento[]>;
+    /**
+     * Lista motoristas vinculados a um veículo específico.
+     */
+    obterMotoristasPorVeiculo(idVeiculo: number): Promise<T.MotoristaVeiculo[]>;
+    /**
+     * Lista grupos/áreas AVD com metadados de auditoria (criação, alteração,
+     * exclusão e logs efetivos).
+     */
+    obterLayoutAreaAvd(): Promise<T.LayoutGrupoAreaAvd[]>;
+    /**
+     * Retorna os dados (não detalhado) de um layout específico.
+     */
+    obterLayoutData(layout: string): Promise<T.Layout[]>;
+    /**
+     * Mensagens do portal Sascar associadas ao veículo informado.
+     */
+    obterMensagemPortal(idVeiculo: number): Promise<T.MensagemPortal[]>;
+    /**
+     * Pacote de integração de delta de telemetria (variante do
+     * `obterDeltaTelemetriaIntegracao` que aceita apenas `quantidade`).
+     */
+    obterPacoteIntegracaoDeltatelemetria(quantidade?: number): Promise<T.DeltaTelemetria[]>;
+    /**
+     * Pacote de posições incluindo placa do veículo (variante do
+     * `obterPacotePosicoes` que adiciona o campo `placa`).
+     */
+    obterPacotePosicoesComPlaca(quantidade?: number): Promise<T.PacotePosicaoXML[]>;
+    /**
+     * Snapshot mínimo de telemetria do portal para um veículo
+     * (embreagem, freio, motor, limpador).
+     */
+    obterTelemetriaPortal(idVeiculo: number): Promise<T.TelemetriaPortal[]>;
+    /**
+     * Eventos de telemetria filtrados por data de chegada (além do range
+     * de data da posição). Variante "DataChegada" do
+     * `obterEventoTelemetriaIntegracao`.
+     */
+    obterEventoTelemetriaIntegracaoDataChegada(dataInicio: string, dataFinal: string, dataChegadaInicio: string, dataChegadaFinal: string, idVeiculo: number, idEventoList?: string): Promise<T.EventoTelemetria[]>;
+    /**
+     * Verifica se o veículo está integrado/ativo no sistema. Retorna `true`
+     * ou `false` (booleano único, não array).
+     */
+    verificarVeiculoIntegrado(idVeiculo: number): Promise<boolean>;
+    /**
+     * Retorna o mapeamento completo dos atuadores e sensores de um veículo,
+     * cruzando o cadastro (`obterVeiculos`) com o catálogo de atuadores
+     * (`obterGrupoAtuadores`).
+     *
+     * Para casos em que o consumidor já tem essas listas em memória, é
+     * possível passá-las nas opções (evita as duas chamadas HTTP).
+     *
+     * @example
+     * const map = await client.getMapeamentoVeiculo(2248181);
+     * // map.atuadores[2] === { slot: 2, idAtuador: 240, descricao: "Sirene", tipoPorta: "S" }
+     * // map.portaBloqueio === 1
+     */
+    getMapeamentoVeiculo(idVeiculo: number, opts?: {
+        veiculos?: T.Veiculo[];
+        atuadores?: T.GrupoAtuador[];
+    }): Promise<T.VeiculoMapeado>;
+    /**
+     * Localiza um atuador no veículo pelo nome (busca tolerante por substring
+     * case-insensitive na descrição do catálogo) ou pelo slot direto.
+     *
+     * Casos especiais: "bloqueio" e "panico" são resolvidos via
+     * `portaBloqueio`/`portaPanico` (portas dedicadas que não aparecem no
+     * catálogo de atuadores). O `idAtuador` retornado nesses casos é `0`
+     * para sinalizar que não há entrada no catálogo, mas o `slot` reflete
+     * a porta correta.
+     *
+     * @example
+     * await client.findAtuador(2248181, 'sirene')
+     * // -> { slot: 2, idAtuador: 240, descricao: "Sirene", tipoPorta: "S" }
+     *
+     * await client.findAtuador(2248181, 'bloqueio')
+     * // -> { slot: 1, idAtuador: 0, descricao: "Bloqueio (porta dedicada)", tipoPorta: "S" }
+     *
+     * @returns o atuador encontrado ou `null` se nenhum bater.
+     */
+    findAtuador(idVeiculo: number, descricaoOrSlot: string | number, opts?: {
+        veiculos?: T.Veiculo[];
+        atuadores?: T.GrupoAtuador[];
+    }): Promise<T.AtuadorMapeado | null>;
 }

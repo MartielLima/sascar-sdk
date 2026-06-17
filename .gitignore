@@ -25,3 +25,7 @@ coverage/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# scripts de exploracao / saidas de teste ao vivo
+scripts/
+test-results.md

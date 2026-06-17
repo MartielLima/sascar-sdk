@@ -111,7 +111,7 @@ export class SascarClient {
   }
 
   async obterAlertasAVDVinculados(veiplaca?: string, veioid?: string): Promise<T.AlertaAVD[]> {
-    return this.request<T.AlertaAVD[]>('ObterAlertasAVDVinculados', { veiplaca, veioid });
+    return this.request<T.AlertaAVD[]>('obterAlertasAVDVinculados', { veiplaca, veioid });
   }
 
   async obterGrupoAtuadores(): Promise<T.GrupoAtuador[]> {
@@ -579,5 +579,240 @@ export class SascarClient {
     dataPosicao?: string
   ): Promise<T.CaixaPretaList[]> {
     return this.request<T.CaixaPretaList[]>('recuperarEventosCaixaPreta', { idVeiculo, placa, dataPosicao });
+  }
+
+  // ==========================================================================
+  // MÉTODOS DESCOBERTOS NO WSDL AO VIVO (ausentes do manual v2.07).
+  // Auditoria 2026-06-17 contra https://sasintegra.sascar.com.br/...?wsdl
+  // ==========================================================================
+
+  /**
+   * Consulta quantos pacotes de posição estão pendentes na fila do servidor
+   * para consumo. Útil para monitoramento da fila antes de drenar com
+   * `obterPacotePosicoes*`.
+   */
+  async consultaQuantidadePacotesPosicoesPendentes(): Promise<T.PacotePendente[]> {
+    return this.request<T.PacotePendente[]>('consultaQuantidadePacotesPosicoesPendentes');
+  }
+
+  /**
+   * Eventos de SmartCameras (câmeras embarcadas Sascar). Operação ampla com
+   * múltiplos filtros opcionais. O único campo obrigatório na prática é
+   * `agrupador` (identificador do cliente/conta).
+   */
+  async getSmartCamerasEvents(params: T.SmartCamerasEventsParams): Promise<T.SmartCamerasEvento[]> {
+    return this.request<T.SmartCamerasEvento[]>('getSmartCamerasEvents', { ...params });
+  }
+
+  /**
+   * Lista motoristas vinculados a um veículo específico.
+   */
+  async obterMotoristasPorVeiculo(idVeiculo: number): Promise<T.MotoristaVeiculo[]> {
+    return this.request<T.MotoristaVeiculo[]>('obterMotoristasPorVeiculo', { idVeiculo });
+  }
+
+  /**
+   * Lista grupos/áreas AVD com metadados de auditoria (criação, alteração,
+   * exclusão e logs efetivos).
+   */
+  async obterLayoutAreaAvd(): Promise<T.LayoutGrupoAreaAvd[]> {
+    return this.request<T.LayoutGrupoAreaAvd[]>('obterLayoutAreaAvd');
+  }
+
+  /**
+   * Retorna os dados (não detalhado) de um layout específico.
+   */
+  async obterLayoutData(layout: string): Promise<T.Layout[]> {
+    return this.request<T.Layout[]>('obterLayoutData', { layout });
+  }
+
+  /**
+   * Mensagens do portal Sascar associadas ao veículo informado.
+   */
+  async obterMensagemPortal(idVeiculo: number): Promise<T.MensagemPortal[]> {
+    return this.request<T.MensagemPortal[]>('obterMensagemPortal', { idVeiculo });
+  }
+
+  /**
+   * Pacote de integração de delta de telemetria (variante do
+   * `obterDeltaTelemetriaIntegracao` que aceita apenas `quantidade`).
+   */
+  async obterPacoteIntegracaoDeltatelemetria(quantidade = 3000): Promise<T.DeltaTelemetria[]> {
+    return this.request<T.DeltaTelemetria[]>('obterPacoteIntegracaoDeltatelemetria', { quantidade });
+  }
+
+  /**
+   * Pacote de posições incluindo placa do veículo (variante do
+   * `obterPacotePosicoes` que adiciona o campo `placa`).
+   */
+  async obterPacotePosicoesComPlaca(quantidade = 3000): Promise<T.PacotePosicaoXML[]> {
+    return this.request<T.PacotePosicaoXML[]>('obterPacotePosicoesComPlaca', { quantidade }, true);
+  }
+
+  /**
+   * Snapshot mínimo de telemetria do portal para um veículo
+   * (embreagem, freio, motor, limpador).
+   */
+  async obterTelemetriaPortal(idVeiculo: number): Promise<T.TelemetriaPortal[]> {
+    return this.request<T.TelemetriaPortal[]>('obterTelemetriaPortal', { idVeiculo });
+  }
+
+  /**
+   * Eventos de telemetria filtrados por data de chegada (além do range
+   * de data da posição). Variante "DataChegada" do
+   * `obterEventoTelemetriaIntegracao`.
+   */
+  async obterEventoTelemetriaIntegracaoDataChegada(
+    dataInicio: string,
+    dataFinal: string,
+    dataChegadaInicio: string,
+    dataChegadaFinal: string,
+    idVeiculo: number,
+    idEventoList?: string
+  ): Promise<T.EventoTelemetria[]> {
+    return this.request<T.EventoTelemetria[]>('obterEventoTelemetriaIntegracaoDataChegada', {
+      dataInicio,
+      dataFinal,
+      dataChegadaInicio,
+      dataChegadaFinal,
+      idVeiculo,
+      idEventoList
+    });
+  }
+
+  /**
+   * Verifica se o veículo está integrado/ativo no sistema. Retorna `true`
+   * ou `false` (booleano único, não array).
+   */
+  async verificarVeiculoIntegrado(idVeiculo: number): Promise<boolean> {
+    const result = await this.request<boolean[] | boolean>('verificarVeiculoIntegrado', { idVeiculo });
+    if (Array.isArray(result)) return result[0] === true || String(result[0]) === 'true';
+    return result === true || String(result) === 'true';
+  }
+
+  // ==========================================================================
+  // HELPERS DE MAPEAMENTO (catálogo + cadastro do veículo)
+  // ==========================================================================
+
+  /**
+   * Retorna o mapeamento completo dos atuadores e sensores de um veículo,
+   * cruzando o cadastro (`obterVeiculos`) com o catálogo de atuadores
+   * (`obterGrupoAtuadores`).
+   *
+   * Para casos em que o consumidor já tem essas listas em memória, é
+   * possível passá-las nas opções (evita as duas chamadas HTTP).
+   *
+   * @example
+   * const map = await client.getMapeamentoVeiculo(2248181);
+   * // map.atuadores[2] === { slot: 2, idAtuador: 240, descricao: "Sirene", tipoPorta: "S" }
+   * // map.portaBloqueio === 1
+   */
+  async getMapeamentoVeiculo(
+    idVeiculo: number,
+    opts?: { veiculos?: T.Veiculo[]; atuadores?: T.GrupoAtuador[] }
+  ): Promise<T.VeiculoMapeado> {
+    const [veiculos, atuadores] = await Promise.all([
+      opts?.veiculos ? Promise.resolve(opts.veiculos) : this.obterVeiculos(1000),
+      opts?.atuadores ? Promise.resolve(opts.atuadores) : this.obterGrupoAtuadores()
+    ]);
+
+    const veiculo = veiculos.find((v) => v.idVeiculo === idVeiculo);
+    if (!veiculo) {
+      throw new Error(`Veículo com idVeiculo=${idVeiculo} não encontrado na frota.`);
+    }
+
+    const catalogo = new Map<number, T.GrupoAtuador>();
+    for (const a of atuadores) catalogo.set(a.idAtuador, a);
+
+    const atuadoresMapeados: Record<number, T.AtuadorMapeado> = {};
+    const sensoresMapeados: Record<number, T.SensorMapeado> = {};
+
+    for (let slot = 1; slot <= 8; slot++) {
+      const idA = (veiculo as unknown as Record<string, number>)[`idAtuador${slot}`];
+      if (idA && idA !== 0) {
+        const cat = catalogo.get(idA);
+        atuadoresMapeados[slot] = {
+          slot,
+          idAtuador: idA,
+          descricao: cat?.descricao ?? `(idAtuador=${idA} fora do catálogo)`,
+          tipoPorta: cat?.tipoPorta ?? '?'
+        };
+      }
+      const idS = (veiculo as unknown as Record<string, number>)[`idSensor${slot}`];
+      if (idS && idS !== 0) {
+        const cat = catalogo.get(idS);
+        sensoresMapeados[slot] = {
+          slot,
+          idSensor: idS,
+          descricao: cat?.descricao ?? `(idSensor=${idS} fora do catálogo)`,
+          tipoPorta: cat?.tipoPorta ?? '?'
+        };
+      }
+    }
+
+    return {
+      veiculo,
+      atuadores: atuadoresMapeados,
+      sensores: sensoresMapeados,
+      portaBloqueio: veiculo.portaBloqueio,
+      portaPanico: veiculo.portaPanico
+    };
+  }
+
+  /**
+   * Localiza um atuador no veículo pelo nome (busca tolerante por substring
+   * case-insensitive na descrição do catálogo) ou pelo slot direto.
+   *
+   * Casos especiais: "bloqueio" e "panico" são resolvidos via
+   * `portaBloqueio`/`portaPanico` (portas dedicadas que não aparecem no
+   * catálogo de atuadores). O `idAtuador` retornado nesses casos é `0`
+   * para sinalizar que não há entrada no catálogo, mas o `slot` reflete
+   * a porta correta.
+   *
+   * @example
+   * await client.findAtuador(2248181, 'sirene')
+   * // -> { slot: 2, idAtuador: 240, descricao: "Sirene", tipoPorta: "S" }
+   *
+   * await client.findAtuador(2248181, 'bloqueio')
+   * // -> { slot: 1, idAtuador: 0, descricao: "Bloqueio (porta dedicada)", tipoPorta: "S" }
+   *
+   * @returns o atuador encontrado ou `null` se nenhum bater.
+   */
+  async findAtuador(
+    idVeiculo: number,
+    descricaoOrSlot: string | number,
+    opts?: { veiculos?: T.Veiculo[]; atuadores?: T.GrupoAtuador[] }
+  ): Promise<T.AtuadorMapeado | null> {
+    const map = await this.getMapeamentoVeiculo(idVeiculo, opts);
+
+    if (typeof descricaoOrSlot === 'number') {
+      return map.atuadores[descricaoOrSlot] ?? null;
+    }
+
+    const needle = descricaoOrSlot.toLowerCase().trim();
+    if (!needle) return null;
+
+    // Casos especiais: portas dedicadas fora do catálogo
+    if (needle.includes('bloque') && map.portaBloqueio > 0) {
+      return {
+        slot: map.portaBloqueio,
+        idAtuador: 0,
+        descricao: 'Bloqueio (porta dedicada)',
+        tipoPorta: 'S'
+      };
+    }
+    if (needle.includes('panico') && map.portaPanico > 0) {
+      return {
+        slot: map.portaPanico,
+        idAtuador: 0,
+        descricao: 'Pânico (porta dedicada)',
+        tipoPorta: 'S'
+      };
+    }
+
+    for (const atuador of Object.values(map.atuadores)) {
+      if (atuador.descricao.toLowerCase().includes(needle)) return atuador;
+    }
+    return null;
   }
 }

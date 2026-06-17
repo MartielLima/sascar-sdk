@@ -84,7 +84,7 @@ Veja `.env.example` no repositório.
 
 ## 📚 Referência Completa da API
 
-Abaixo estão listados todos os `63` métodos suportados pelo SDK.
+Abaixo estão listados todos os `74` métodos suportados pelo SDK (63 do manual SasIntegra v2.07 + 11 descobertos no WSDL ao vivo + 2 helpers de mapeamento).
 _Clique no nome do método para expandir e visualizar todos os atributos de retorno e o exemplo de código._
 
 ### 🛠️ Cadastros e Entidades
@@ -187,8 +187,8 @@ console.log(resultado);
 interface Cliente {
   idCliente: number;
   nome: string;
-  CPF?: number;
-  CNPJ?: number | string;
+  cpf?: number;
+  cnpj?: number | string;
 }
 ```
 
@@ -258,9 +258,9 @@ interface Veiculo {
   idAtuador6: number;
   idAtuador7: number;
   idAtuador8: number;
-  esn: string | null;
-  idProjeto: number | null;
-  isTelemetry: boolean;
+  esn?: string | null;
+  idProjeto?: number | null;
+  telemetria: boolean;
 }
 ```
 
@@ -307,9 +307,9 @@ interface Veiculo {
   idAtuador6: number;
   idAtuador7: number;
   idAtuador8: number;
-  esn: string | null;
-  idProjeto: number | null;
-  isTelemetry: boolean;
+  esn?: string | null;
+  idProjeto?: number | null;
+  telemetria: boolean;
 }
 ```
 
@@ -672,6 +672,12 @@ interface PacotePosicaoXML {
   eventosTelemetria?: any[];
   acessorios?: any;
   placa?: string;
+  integradoraId?: number;
+  nomeMensagem?: string;
+  eventoFormatado?: string;
+  eventoSeqFormatado?: string;
+  temperaturaSerial?: number;
+  umidadeSerial?: number;
 }
 ```
 
@@ -754,6 +760,8 @@ interface PacotePosicaoJSON {
   estadoLimpadorParabrisa: number | null;
   umidadeSerial: number;
   temperaturaSerial: number;
+  odometroExato?: number;
+  eventosTelemetria?: any[];
   placa?: string;
 }
 ```
@@ -835,6 +843,12 @@ interface PacotePosicaoXML {
   eventosTelemetria?: any[];
   acessorios?: any;
   placa?: string;
+  integradoraId?: number;
+  nomeMensagem?: string;
+  eventoFormatado?: string;
+  eventoSeqFormatado?: string;
+  temperaturaSerial?: number;
+  umidadeSerial?: number;
 }
 ```
 
@@ -917,6 +931,8 @@ interface PacotePosicaoJSON {
   estadoLimpadorParabrisa: number | null;
   umidadeSerial: number;
   temperaturaSerial: number;
+  odometroExato?: number;
+  eventosTelemetria?: any[];
   placa?: string;
 }
 ```
@@ -998,6 +1014,12 @@ interface PacotePosicaoXML {
   eventosTelemetria?: any[];
   acessorios?: any;
   placa?: string;
+  integradoraId?: number;
+  nomeMensagem?: string;
+  eventoFormatado?: string;
+  eventoSeqFormatado?: string;
+  temperaturaSerial?: number;
+  umidadeSerial?: number;
 }
 ```
 
@@ -1080,6 +1102,8 @@ interface PacotePosicaoJSON {
   estadoLimpadorParabrisa: number | null;
   umidadeSerial: number;
   temperaturaSerial: number;
+  odometroExato?: number;
+  eventosTelemetria?: any[];
   placa?: string;
 }
 ```
@@ -1161,6 +1185,12 @@ interface PacotePosicaoXML {
   eventosTelemetria?: any[];
   acessorios?: any;
   placa?: string;
+  integradoraId?: number;
+  nomeMensagem?: string;
+  eventoFormatado?: string;
+  eventoSeqFormatado?: string;
+  temperaturaSerial?: number;
+  umidadeSerial?: number;
 }
 ```
 
@@ -1241,6 +1271,12 @@ interface PacotePosicaoXML {
   eventosTelemetria?: any[];
   acessorios?: any;
   placa?: string;
+  integradoraId?: number;
+  nomeMensagem?: string;
+  eventoFormatado?: string;
+  eventoSeqFormatado?: string;
+  temperaturaSerial?: number;
+  umidadeSerial?: number;
 }
 ```
 
@@ -1321,6 +1357,12 @@ interface PacotePosicaoXML {
   eventosTelemetria?: any[];
   acessorios?: any;
   placa?: string;
+  integradoraId?: number;
+  nomeMensagem?: string;
+  eventoFormatado?: string;
+  eventoSeqFormatado?: string;
+  temperaturaSerial?: number;
+  umidadeSerial?: number;
 }
 ```
 
@@ -1403,6 +1445,8 @@ interface PacotePosicaoJSON {
   estadoLimpadorParabrisa: number | null;
   umidadeSerial: number;
   temperaturaSerial: number;
+  odometroExato?: number;
+  eventosTelemetria?: any[];
   placa?: string;
 }
 ```
@@ -1484,6 +1528,12 @@ interface PacotePosicaoXML {
   eventosTelemetria?: any[];
   acessorios?: any;
   placa?: string;
+  integradoraId?: number;
+  nomeMensagem?: string;
+  eventoFormatado?: string;
+  eventoSeqFormatado?: string;
+  temperaturaSerial?: number;
+  umidadeSerial?: number;
 }
 ```
 
@@ -1564,6 +1614,12 @@ interface PacotePosicaoXML {
   eventosTelemetria?: any[];
   acessorios?: any;
   placa?: string;
+  integradoraId?: number;
+  nomeMensagem?: string;
+  eventoFormatado?: string;
+  eventoSeqFormatado?: string;
+  temperaturaSerial?: number;
+  umidadeSerial?: number;
 }
 ```
 
@@ -1646,6 +1702,8 @@ interface PacotePosicaoJSON {
   estadoLimpadorParabrisa: number | null;
   umidadeSerial: number;
   temperaturaSerial: number;
+  odometroExato?: number;
+  eventosTelemetria?: any[];
   placa?: string;
 }
 ```
@@ -2963,3 +3021,257 @@ interface CaixaPretaList {
 ```
 
 </details>
+
+### 🔎 Métodos descobertos no WSDL ao vivo (não documentados no manual v2.07)
+
+Estes métodos foram identificados via auditoria do WSDL `https://sasintegra.sascar.com.br/SasIntegra/SasIntegraWSService?wsdl` em 2026-06-17. **Vários exigem permissões específicas na conta** — testar contra produção retorna `acesso nao permitido a esta operacao!` quando o usuário não tem o role correspondente.
+
+<details>
+<summary><code><b>consultaQuantidadePacotesPosicoesPendentes()</b></code></summary>
+
+Consulta a quantidade de pacotes de posição pendentes na fila do servidor. Útil para monitoramento.
+
+**Exemplo de Chamada:**
+
+```typescript
+const status = await client.consultaQuantidadePacotesPosicoesPendentes();
+// [{ dtUltimaRequisicao: "2026-06-17 11:20:42.616706", qtdPacotesPendentes: 124 }]
+```
+
+**Retorno Esperado (`T.PacotePendente[]`):**
+
+```typescript
+interface PacotePendente {
+  dtUltimaRequisicao: string;
+  qtdPacotesPendentes: number;
+}
+```
+
+</details>
+
+<details>
+<summary><code><b>getSmartCamerasEvents(params: SmartCamerasEventsParams)</b></code></summary>
+
+Eventos de SmartCameras (câmeras embarcadas Sascar) com múltiplos filtros.
+
+```typescript
+const events = await client.getSmartCamerasEvents({
+  agrupador: 'cliente-123',
+  offset: 0,
+  limit: 50,
+  dataInicio: '2026-06-16 00:00:00',
+  dataFim: '2026-06-17 00:00:00',
+  tipoEvento: 'PERCLOS',
+  criticidade: 'ALTA'
+});
+```
+
+**Retorno (`T.SmartCamerasEvento[]`):**
+
+```typescript
+interface SmartCamerasEvento {
+  deviceId: string;
+  driver: SmartCamerasMotorista;
+  eventType: number;
+  hwType: string;
+  id: string;
+  messageId: number;
+  ntwkMedium: string;
+  payload: SmartCamerasPayload;
+  pkDeviceDate: string;
+  plate: string;
+  shadow: number;
+  timestamp: string;
+}
+```
+
+</details>
+
+<details>
+<summary><code><b>obterMotoristasPorVeiculo(idVeiculo: number)</b></code></summary>
+
+Lista motoristas vinculados a um veículo específico.
+
+```typescript
+const motoristas = await client.obterMotoristasPorVeiculo(2248181);
+```
+
+**Retorno:** `T.MotoristaVeiculo[]`
+
+</details>
+
+<details>
+<summary><code><b>obterLayoutAreaAvd()</b></code></summary>
+
+Lista grupos/áreas AVD com metadados de auditoria.
+
+**Retorno (`T.LayoutGrupoAreaAvd[]`):**
+
+```typescript
+interface LayoutGrupoAreaAvd {
+  clienteId: number;
+  dataAlteracao: string;
+  dataCriacao: string;
+  dataExclusao: string;
+  gerenciadoraId: number;
+  id: number;
+  logEfetivoDelelete: number;
+  logEfetivoInsert: number;
+  logEfetivoUpdate: number;
+  logIdDelelete: number;
+  logIdInsert: number;
+  logIdUpdate: number;
+  nome: string;
+}
+```
+
+</details>
+
+<details>
+<summary><code><b>obterLayoutData(layout: string)</b></code></summary>
+
+Retorna dados (não detalhado) de um layout específico.
+
+**Retorno:** `T.Layout[]`
+
+</details>
+
+<details>
+<summary><code><b>obterMensagemPortal(idVeiculo: number)</b></code></summary>
+
+Mensagens do portal Sascar associadas ao veículo.
+
+**Retorno (`T.MensagemPortal[]`):**
+
+```typescript
+interface MensagemPortal {
+  mensagem: string;
+}
+```
+
+</details>
+
+<details>
+<summary><code><b>obterPacoteIntegracaoDeltatelemetria(quantidade = 3000)</b></code></summary>
+
+Variante do `obterDeltaTelemetriaIntegracao` que recebe apenas `quantidade`. Drena pacotes acumulados da fila do servidor.
+
+```typescript
+const deltas = await client.obterPacoteIntegracaoDeltatelemetria(100);
+```
+
+**Retorno:** `T.DeltaTelemetria[]`
+
+</details>
+
+<details>
+<summary><code><b>obterPacotePosicoesComPlaca(quantidade = 3000)</b></code></summary>
+
+Variante do `obterPacotePosicoes` que adiciona o campo `placa` em cada item.
+
+**Retorno:** `T.PacotePosicaoXML[]` (com `placa` preenchida)
+
+</details>
+
+<details>
+<summary><code><b>obterTelemetriaPortal(idVeiculo: number)</b></code></summary>
+
+Snapshot mínimo de telemetria do portal.
+
+**Retorno (`T.TelemetriaPortal[]`):**
+
+```typescript
+interface TelemetriaPortal {
+  embreagem: number;
+  estadoLimpadorParabrisa: number;
+  freio: number;
+  motorFuncionando: number;
+}
+```
+
+</details>
+
+<details>
+<summary><code><b>obterEventoTelemetriaIntegracaoDataChegada(dataInicio, dataFinal, dataChegadaInicio, dataChegadaFinal, idVeiculo, idEventoList?)</b></code></summary>
+
+Eventos de telemetria filtrados por range de data de chegada (variante do `obterEventoTelemetriaIntegracao`).
+
+```typescript
+const eventos = await client.obterEventoTelemetriaIntegracaoDataChegada(
+  '2026-06-16 00:00:00', '2026-06-16 23:59:59',
+  '2026-06-16 00:00:00', '2026-06-16 23:59:59',
+  2248181
+);
+```
+
+**Retorno:** `T.EventoTelemetria[]` (inclui campo extra `dataChegada`)
+
+</details>
+
+<details>
+<summary><code><b>verificarVeiculoIntegrado(idVeiculo: number)</b></code></summary>
+
+Verifica se o veículo está integrado/ativo no sistema. Retorna boolean único, **não array**.
+
+```typescript
+const ativo: boolean = await client.verificarVeiculoIntegrado(2248181);
+```
+
+</details>
+
+### 🧭 Helpers de mapeamento de atuadores/sensores
+
+Helpers de conveniência que cruzam o cadastro do veículo (`obterVeiculos`) com o catálogo Sascar (`obterGrupoAtuadores`) para expor a descrição amigável de cada slot.
+
+<details>
+<summary><code><b>getMapeamentoVeiculo(idVeiculo: number, opts?)</b></code></summary>
+
+Retorna o mapeamento completo do veículo.
+
+```typescript
+const map = await client.getMapeamentoVeiculo(2248181);
+// map.atuadores[2] === { slot: 2, idAtuador: 240, descricao: "Sirene", tipoPorta: "S" }
+// map.atuadores[3] === { slot: 3, idAtuador: 254, descricao: "Trava Bau Traseiro", tipoPorta: "S" }
+// map.atuadores[7] === { slot: 7, idAtuador: 232, descricao: "Buzzer", tipoPorta: "S" }
+// map.portaBloqueio === 1
+// map.portaPanico === 9
+// map.sensores[3] === { slot: 3, idSensor: 231, descricao: "Violacao Painel", tipoPorta: "E" }
+```
+
+**Otimização:** se você já tem as listas em memória, passe-as em `opts` para evitar HTTP:
+
+```typescript
+const map = await client.getMapeamentoVeiculo(2248181, { veiculos, atuadores });
+```
+
+**Retorno:** `T.VeiculoMapeado`
+
+</details>
+
+<details>
+<summary><code><b>findAtuador(idVeiculo: number, descricaoOrSlot: string | number, opts?)</b></code></summary>
+
+Localiza um atuador pelo nome (substring case-insensitive) ou pelo slot.
+
+```typescript
+const sirene = await client.findAtuador(2248181, 'sirene');
+// { slot: 2, idAtuador: 240, descricao: "Sirene", tipoPorta: "S" }
+
+const trava = await client.findAtuador(2248181, 'trava');
+// { slot: 3, idAtuador: 254, descricao: "Trava Bau Traseiro", tipoPorta: "S" }
+
+// Casos especiais — portas dedicadas fora do catálogo:
+const blq = await client.findAtuador(2248181, 'bloqueio');
+// { slot: 1, idAtuador: 0, descricao: "Bloqueio (porta dedicada)", tipoPorta: "S" }
+
+const pan = await client.findAtuador(2248181, 'panico');
+// { slot: 9, idAtuador: 0, descricao: "Pânico (porta dedicada)", tipoPorta: "S" }
+```
+
+Retorna `null` se nenhum atuador bater.
+
+**Retorno:** `T.AtuadorMapeado | null`
+
+</details>
+
+> ⚠ **Nota sobre comandos de bloqueio/sirene/buzzer:** o WS SasIntegra é **somente-leitura** para dados de frota. Não existem endpoints `bloquearVeiculo`, `acionarSirene` etc. no WSDL. Para enviar comandos reais ao veículo, é necessário usar um canal separado da Sascar (UI da plataforma ou API REST distinta). Os helpers acima resolvem **qual slot/porta** corresponde a cada comando — você usa essa informação no canal de comando que tem disponível.

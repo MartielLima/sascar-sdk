@@ -32,8 +32,10 @@ export interface CadastroAlertaAVD {
 export interface Cliente {
   idCliente: number;
   nome: string;
-  CPF?: number;
-  CNPJ?: number | string;
+  /** CPF do cliente (PF). API retorna 0 quando ausente. */
+  cpf?: number;
+  /** CNPJ do cliente (PJ). Pode vir como número (com zero à esquerda truncado) ou string. */
+  cnpj?: number | string;
 }
 
 export interface ClienteV2 {
@@ -116,6 +118,18 @@ export interface PacotePosicaoXML {
   eventosTelemetria?: EventoTelemetria[];
   acessorios?: AcessorioVeiculo;
   placa?: string;
+  /** ID da integradora/conta na Sascar. Observado em respostas reais, ausente no manual v2.07. */
+  integradoraId?: number;
+  /** Nome amigável da mensagem (correlato a `codigoMacro`). Observado em respostas reais. */
+  nomeMensagem?: string;
+  /** Eventos formatados como string (telemetria/sequenciamento). Observado em respostas reais. */
+  eventoFormatado?: string;
+  /** Sequenciamento formatado como string. Observado em respostas reais. */
+  eventoSeqFormatado?: string;
+  /** Temperatura do sensor serial. Observado em respostas reais XML, ausente no manual v2.07. */
+  temperaturaSerial?: number;
+  /** Umidade do sensor serial. Observado em respostas reais XML, ausente no manual v2.07. */
+  umidadeSerial?: number;
 }
 
 export interface PacotePosicaoJSON {
@@ -182,6 +196,10 @@ export interface PacotePosicaoJSON {
   estadoLimpadorParabrisa: number | null;
   umidadeSerial: number;
   temperaturaSerial: number;
+  /** Odômetro de alta precisão (acumulado real do veículo). Observado em produção, não documentado no manual v2.07. */
+  odometroExato?: number;
+  /** Eventos de telemetria detalhados. Observado em variantes "Motorista" da API real. */
+  eventosTelemetria?: EventoTelemetria[];
   placa?: string;
 }
 
@@ -332,9 +350,12 @@ export interface Veiculo {
   idAtuador6: number;
   idAtuador7: number;
   idAtuador8: number;
-  esn: string | null;
-  idProjeto: number | null;
-  isTelemetry: boolean;
+  /** ESN do equipamento. Pode estar ausente em respostas reais. */
+  esn?: string | null;
+  /** ID de projeto da Sascar. Pode estar ausente em respostas reais. */
+  idProjeto?: number | null;
+  /** Indica se o veículo tem telemetria habilitada. API real retorna `telemetria` (não `isTelemetry`). */
+  telemetria: boolean;
 }
 
 export interface VeiculoRFNacional {
@@ -514,6 +535,14 @@ export interface DeltaTelemetria {
   distanciaPercorridaEmbreagemAcionada: number;
   distanciaPercorridaFreioAcionado: number;
   consumoCombustivel?: number;
+  /** Tempo na faixa amarela (agregado). Observado em respostas reais. */
+  tempoDuracaoFaixaAmarela?: number;
+  /** Tempo na faixa azul. Observado em respostas reais (não consta no manual v2.07). */
+  tempoDuracaoFaixaAzul?: number;
+  /** Tempo na faixa verde (agregado). Observado em respostas reais. */
+  tempoDuracaoFaixaVerde?: number;
+  /** Tempo na faixa vermelha. Observado em respostas reais (não consta no manual v2.07). */
+  tempoDuracaoFaixaVermelha?: number;
   distPercorridaAscendenteFxAmarela: number;
   distPercorridaAscendenteFxMarchaLenta: number;
   distPercorridaAscendenteFxPerigo: number;
@@ -625,4 +654,175 @@ export interface PosicaoEvento {
  */
 export interface AcessorioVeiculo {
   [chave: string]: string | number | boolean | null;
+}
+
+// ============================================================================
+// Tipos para os métodos descobertos no WSDL ao vivo (não documentados no
+// manual v2.07). Adicionados após auditoria do XSD em 2026-06-17.
+// ============================================================================
+
+/**
+ * Retorno de `consultaQuantidadePacotesPosicoesPendentes`. Indica quantos
+ * pacotes de posição estão aguardando consumo na fila do servidor.
+ */
+export interface PacotePendente {
+  dtUltimaRequisicao: string;
+  qtdPacotesPendentes: number;
+}
+
+/**
+ * Identificação do motorista vinculado a um evento de SmartCameras.
+ */
+export interface SmartCamerasMotorista {
+  cpf: string;
+  nome: string;
+  registration: string;
+}
+
+/**
+ * Payload do evento de SmartCameras (dados do hardware + arquivo capturado).
+ * Todos os campos chegam como string mesmo quando numéricos.
+ */
+export interface SmartCamerasPayload {
+  camera: string;
+  data_size: string;
+  direction: string;
+  driver_id: string;
+  event_id: string;
+  file: string;
+  gps_valid: string;
+  lat: string;
+  lon: string;
+  num_cams: string;
+  num_sats: string;
+  perclos_id: string;
+  perclos_value: string;
+  request_id: string;
+  resolution: string;
+  timestamp: string;
+  upload_duration: string;
+  vel: string;
+  video_duration: string;
+}
+
+/**
+ * Evento de SmartCameras (câmeras embarcadas Sascar).
+ */
+export interface SmartCamerasEvento {
+  deviceId: string;
+  driver: SmartCamerasMotorista;
+  eventType: number;
+  hwType: string;
+  id: string;
+  messageId: number;
+  ntwkMedium: string;
+  payload: SmartCamerasPayload;
+  pkDeviceDate: string;
+  plate: string;
+  shadow: number;
+  timestamp: string;
+}
+
+/**
+ * Parâmetros aceitos por `getSmartCamerasEvents`. Quase todos opcionais; a
+ * única obrigatoriedade prática é o `agrupador` (cliente/conta).
+ */
+export interface SmartCamerasEventsParams {
+  agrupador: string;
+  offset?: number;
+  limit?: number;
+  motoristas?: string;
+  veiculos?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  tipoEvento?: string;
+  criticidade?: string;
+  turno?: string;
+  diaSemana?: string;
+  quantidade?: number;
+  status?: string;
+}
+
+/**
+ * Grupo/área AVD retornado por `obterLayoutAreaAvd`. Mantém estrutura
+ * detalhada de auditoria (logs de insert/update/delete).
+ */
+export interface LayoutGrupoAreaAvd {
+  clienteId: number;
+  dataAlteracao: string;
+  dataCriacao: string;
+  dataExclusao: string;
+  gerenciadoraId: number;
+  id: number;
+  logEfetivoDelelete: number;
+  logEfetivoInsert: number;
+  logEfetivoUpdate: number;
+  logIdDelelete: number;
+  logIdInsert: number;
+  logIdUpdate: number;
+  nome: string;
+}
+
+/**
+ * Mensagem do portal Sascar associada ao veículo.
+ */
+export interface MensagemPortal {
+  mensagem: string;
+}
+
+/**
+ * Snapshot de telemetria mínima do portal para um veículo.
+ */
+export interface TelemetriaPortal {
+  embreagem: number;
+  estadoLimpadorParabrisa: number;
+  freio: number;
+  motorFuncionando: number;
+}
+
+// ============================================================================
+// Tipos para os helpers de mapeamento de atuadores/sensores
+// ============================================================================
+
+/**
+ * Atuador (saída) mapeado de um veículo: cruza a configuração do veículo
+ * (`idAtuador1..8`) com o catálogo (`obterGrupoAtuadores`) para expor a
+ * descrição amigável de cada slot.
+ */
+export interface AtuadorMapeado {
+  /** Slot físico no dispositivo (1..8). */
+  slot: number;
+  /** ID do tipo de atuador no catálogo Sascar. */
+  idAtuador: number;
+  /** Descrição amigável (ex.: "Sirene", "Trava Bau Traseiro"). */
+  descricao: string;
+  /** Tipo de porta: "S" (saída/atuador) ou "E" (entrada/sensor). */
+  tipoPorta: string;
+}
+
+/**
+ * Sensor (entrada) mapeado de um veículo: cruza `idSensor1..8` com o catálogo.
+ */
+export interface SensorMapeado {
+  slot: number;
+  idSensor: number;
+  descricao: string;
+  tipoPorta: string;
+}
+
+/**
+ * Mapeamento completo do veículo: cadastro + atuadores e sensores resolvidos
+ * contra o catálogo Sascar. Útil para construir camadas de comando que
+ * precisam saber "qual slot é a sirene".
+ */
+export interface VeiculoMapeado {
+  veiculo: Veiculo;
+  /** Atuadores ativos, indexados por slot. */
+  atuadores: Record<number, AtuadorMapeado>;
+  /** Sensores ativos, indexados por slot. */
+  sensores: Record<number, SensorMapeado>;
+  /** Slot da porta de bloqueio (campo `portaBloqueio` do cadastro). */
+  portaBloqueio: number;
+  /** Slot da porta de pânico (campo `portaPanico` do cadastro). */
+  portaPanico: number;
 }

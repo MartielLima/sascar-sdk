@@ -19,7 +19,7 @@ describe('Cadastros e Entidades (integration)', () => {
   });
 
   it('obterAlertasAVDVinculados envia veiplaca/veioid', async () => {
-    const scope = mockSoapSuccess('ObterAlertasAVDVinculados', '<return><id>1</id></return>');
+    const scope = mockSoapSuccess('obterAlertasAVDVinculados', '<return><id>1</id></return>');
     const result = await client.obterAlertasAVDVinculados('ABC1D23', '99');
     expect(result).toMatchObject([{ id: 1 }]);
     expect(scope.isDone()).toBe(true);

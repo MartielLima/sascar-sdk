@@ -1,4 +1,5 @@
 import { sendSoapRequest, type SendSoapOptions } from '../../src/transport/http';
+import { SascarApiError } from '../../src/errors';
 
 global.fetch = jest.fn();
 
@@ -131,5 +132,87 @@ describe('sendSoapRequest - retry', () => {
     await expect(sendSoapRequest('<xml/>', { url: 'https://x', timeoutMs: 1000, maxRetries: 1 })).rejects.toThrow(
       /Erro desconhecido em https:\/\/x: 42/
     );
+  });
+});
+
+describe('sendSoapRequest - SOAP Fault em 5xx', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const faultBody = `<?xml version='1.0' encoding='UTF-8'?>
+<S:Envelope xmlns:S="http://schemas.xmlsoap.org/soap/envelope/">
+  <S:Body>
+    <ns0:Fault xmlns:ns0="http://schemas.xmlsoap.org/soap/envelope/">
+      <faultcode>ns0:Server</faultcode>
+      <faultstring>Atencao: acesso nao permitido a esta operacao!</faultstring>
+      <detail><msg>nope</msg></detail>
+    </ns0:Fault>
+  </S:Body>
+</S:Envelope>`;
+
+  it('NÃO retenta em HTTP 500 quando o corpo contém SOAP Fault', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: async () => faultBody
+    });
+
+    await expect(
+      sendSoapRequest('<xml/>', { url: 'https://x', timeoutMs: 1000, maxRetries: 3 })
+    ).rejects.toThrow(/acesso nao permitido/);
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('expõe fault.faultcode e fault.faultstring no SascarApiError', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      text: async () => faultBody
+    });
+
+    try {
+      await sendSoapRequest('<xml/>', { url: 'https://x', timeoutMs: 1000, maxRetries: 3 });
+      fail('deveria ter lançado');
+    } catch (err) {
+      expect(err).toBeInstanceOf(SascarApiError);
+      const apiErr = err as SascarApiError;
+      expect(apiErr.fault?.faultcode).toBe('ns0:Server');
+      expect(apiErr.fault?.faultstring).toContain('acesso nao permitido');
+    }
+  });
+
+  it('mantém retry quando 5xx tem corpo vazio (sem SOAP Fault)', async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({ ok: false, status: 503, text: async () => '' })
+      .mockResolvedValueOnce({ ok: true, status: 200, text: async () => '<ok/>' });
+
+    const result = await sendSoapRequest('<xml/>', { url: 'https://x', timeoutMs: 1000, maxRetries: 3 });
+    expect(result).toBe('<ok/>');
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('propaga fault em HTTP 400 com SOAP Fault no corpo', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      text: async () => faultBody
+    });
+
+    await expect(
+      sendSoapRequest('<xml/>', { url: 'https://x', timeoutMs: 1000, maxRetries: 2 })
+    ).rejects.toThrow(/SOAP Fault/);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('tolera erro ao ler body de resposta 5xx (segue retry como transiente)', async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce({ ok: false, status: 503, text: async () => Promise.reject(new Error('stream gone')) })
+      .mockResolvedValueOnce({ ok: true, status: 200, text: async () => '<ok/>' });
+
+    const result = await sendSoapRequest('<xml/>', { url: 'https://x', timeoutMs: 1000, maxRetries: 3 });
+    expect(result).toBe('<ok/>');
+    expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 });

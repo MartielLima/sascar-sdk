@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendSoapRequest = sendSoapRequest;
 const errors_1 = require("../errors");
+const fault_1 = require("./fault");
 const TRANSIENT_STATUS = new Set([500, 502, 503, 504]);
 function sleep(ms) {
     return new Promise((res) => setTimeout(res, ms));
@@ -15,6 +16,16 @@ function computeBackoffMs(attempt) {
     return Math.round(base * jitter);
 }
 /**
+ * Detecta rapidamente se um corpo de resposta XML contém um SOAP Fault,
+ * sem rodar o parser completo. Usado para decidir se devemos parar de
+ * retentar em respostas 5xx que carregam fault aplicacional.
+ */
+function bodyHasSoapFault(body) {
+    if (!body)
+        return false;
+    return /<(?:[A-Za-z][\w-]*:)?Fault[\s>]/.test(body);
+}
+/**
  * Envia uma requisição SOAP e retorna o corpo da resposta como string.
  *
  * Comportamento:
@@ -22,7 +33,10 @@ function computeBackoffMs(attempt) {
  *  - Em status 401/403 lança SascarAuthError.
  *  - Em status 429 lança SascarRateLimitError.
  *  - Em status 5xx transiente, faz retry com backoff exponencial (até maxRetries).
- *  - Em outros status não-ok, lança SascarApiError.
+ *    EXCEÇÃO: se o corpo da resposta 5xx contém um SOAP Fault, NÃO retenta —
+ *    o fault é aplicacional (ex.: permissão negada) e seria perpetuado. O
+ *    fault é parseado e propagado em SascarApiError.fault.
+ *  - Em outros status não-ok, lança SascarApiError (também tenta extrair fault).
  *  - Em erro de rede, lança SascarConnectionError.
  *  - Em timeout, lança SascarTimeoutError.
  */
@@ -54,6 +68,13 @@ async function sendSoapRequest(xml, options) {
             }
             if (status === 429) {
                 throw new errors_1.SascarRateLimitError(`HTTP 429 (rate limit) em ${url}`);
+            }
+            const body = await response.text().catch(() => '');
+            if (bodyHasSoapFault(body)) {
+                const fault = (0, fault_1.parseSoapFault)(body);
+                if (fault) {
+                    throw new errors_1.SascarApiError(`HTTP ${status} em ${url} — SOAP Fault: ${fault.faultstring} (${fault.faultcode})`, fault);
+                }
             }
             if (isTransientStatus(status) && attempt < maxRetries - 1) {
                 lastError = new errors_1.SascarApiError(`HTTP ${status} transiente em ${url}`);

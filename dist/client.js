@@ -84,7 +84,7 @@ class SascarClient {
         return this.request('atualizarSenha', { senhaAtual, novaSenha });
     }
     async obterAlertasAVDVinculados(veiplaca, veioid) {
-        return this.request('ObterAlertasAVDVinculados', { veiplaca, veioid });
+        return this.request('obterAlertasAVDVinculados', { veiplaca, veioid });
     }
     async obterGrupoAtuadores() {
         return this.request('obterGrupoAtuadores');
@@ -380,6 +380,207 @@ class SascarClient {
     }
     async recuperarEventosCaixaPreta(idVeiculo, placa, dataPosicao) {
         return this.request('recuperarEventosCaixaPreta', { idVeiculo, placa, dataPosicao });
+    }
+    // ==========================================================================
+    // MÉTODOS DESCOBERTOS NO WSDL AO VIVO (ausentes do manual v2.07).
+    // Auditoria 2026-06-17 contra https://sasintegra.sascar.com.br/...?wsdl
+    // ==========================================================================
+    /**
+     * Consulta quantos pacotes de posição estão pendentes na fila do servidor
+     * para consumo. Útil para monitoramento da fila antes de drenar com
+     * `obterPacotePosicoes*`.
+     */
+    async consultaQuantidadePacotesPosicoesPendentes() {
+        return this.request('consultaQuantidadePacotesPosicoesPendentes');
+    }
+    /**
+     * Eventos de SmartCameras (câmeras embarcadas Sascar). Operação ampla com
+     * múltiplos filtros opcionais. O único campo obrigatório na prática é
+     * `agrupador` (identificador do cliente/conta).
+     */
+    async getSmartCamerasEvents(params) {
+        return this.request('getSmartCamerasEvents', { ...params });
+    }
+    /**
+     * Lista motoristas vinculados a um veículo específico.
+     */
+    async obterMotoristasPorVeiculo(idVeiculo) {
+        return this.request('obterMotoristasPorVeiculo', { idVeiculo });
+    }
+    /**
+     * Lista grupos/áreas AVD com metadados de auditoria (criação, alteração,
+     * exclusão e logs efetivos).
+     */
+    async obterLayoutAreaAvd() {
+        return this.request('obterLayoutAreaAvd');
+    }
+    /**
+     * Retorna os dados (não detalhado) de um layout específico.
+     */
+    async obterLayoutData(layout) {
+        return this.request('obterLayoutData', { layout });
+    }
+    /**
+     * Mensagens do portal Sascar associadas ao veículo informado.
+     */
+    async obterMensagemPortal(idVeiculo) {
+        return this.request('obterMensagemPortal', { idVeiculo });
+    }
+    /**
+     * Pacote de integração de delta de telemetria (variante do
+     * `obterDeltaTelemetriaIntegracao` que aceita apenas `quantidade`).
+     */
+    async obterPacoteIntegracaoDeltatelemetria(quantidade = 3000) {
+        return this.request('obterPacoteIntegracaoDeltatelemetria', { quantidade });
+    }
+    /**
+     * Pacote de posições incluindo placa do veículo (variante do
+     * `obterPacotePosicoes` que adiciona o campo `placa`).
+     */
+    async obterPacotePosicoesComPlaca(quantidade = 3000) {
+        return this.request('obterPacotePosicoesComPlaca', { quantidade }, true);
+    }
+    /**
+     * Snapshot mínimo de telemetria do portal para um veículo
+     * (embreagem, freio, motor, limpador).
+     */
+    async obterTelemetriaPortal(idVeiculo) {
+        return this.request('obterTelemetriaPortal', { idVeiculo });
+    }
+    /**
+     * Eventos de telemetria filtrados por data de chegada (além do range
+     * de data da posição). Variante "DataChegada" do
+     * `obterEventoTelemetriaIntegracao`.
+     */
+    async obterEventoTelemetriaIntegracaoDataChegada(dataInicio, dataFinal, dataChegadaInicio, dataChegadaFinal, idVeiculo, idEventoList) {
+        return this.request('obterEventoTelemetriaIntegracaoDataChegada', {
+            dataInicio,
+            dataFinal,
+            dataChegadaInicio,
+            dataChegadaFinal,
+            idVeiculo,
+            idEventoList
+        });
+    }
+    /**
+     * Verifica se o veículo está integrado/ativo no sistema. Retorna `true`
+     * ou `false` (booleano único, não array).
+     */
+    async verificarVeiculoIntegrado(idVeiculo) {
+        const result = await this.request('verificarVeiculoIntegrado', { idVeiculo });
+        if (Array.isArray(result))
+            return result[0] === true || String(result[0]) === 'true';
+        return result === true || String(result) === 'true';
+    }
+    // ==========================================================================
+    // HELPERS DE MAPEAMENTO (catálogo + cadastro do veículo)
+    // ==========================================================================
+    /**
+     * Retorna o mapeamento completo dos atuadores e sensores de um veículo,
+     * cruzando o cadastro (`obterVeiculos`) com o catálogo de atuadores
+     * (`obterGrupoAtuadores`).
+     *
+     * Para casos em que o consumidor já tem essas listas em memória, é
+     * possível passá-las nas opções (evita as duas chamadas HTTP).
+     *
+     * @example
+     * const map = await client.getMapeamentoVeiculo(2248181);
+     * // map.atuadores[2] === { slot: 2, idAtuador: 240, descricao: "Sirene", tipoPorta: "S" }
+     * // map.portaBloqueio === 1
+     */
+    async getMapeamentoVeiculo(idVeiculo, opts) {
+        const [veiculos, atuadores] = await Promise.all([
+            opts?.veiculos ? Promise.resolve(opts.veiculos) : this.obterVeiculos(1000),
+            opts?.atuadores ? Promise.resolve(opts.atuadores) : this.obterGrupoAtuadores()
+        ]);
+        const veiculo = veiculos.find((v) => v.idVeiculo === idVeiculo);
+        if (!veiculo) {
+            throw new Error(`Veículo com idVeiculo=${idVeiculo} não encontrado na frota.`);
+        }
+        const catalogo = new Map();
+        for (const a of atuadores)
+            catalogo.set(a.idAtuador, a);
+        const atuadoresMapeados = {};
+        const sensoresMapeados = {};
+        for (let slot = 1; slot <= 8; slot++) {
+            const idA = veiculo[`idAtuador${slot}`];
+            if (idA && idA !== 0) {
+                const cat = catalogo.get(idA);
+                atuadoresMapeados[slot] = {
+                    slot,
+                    idAtuador: idA,
+                    descricao: cat?.descricao ?? `(idAtuador=${idA} fora do catálogo)`,
+                    tipoPorta: cat?.tipoPorta ?? '?'
+                };
+            }
+            const idS = veiculo[`idSensor${slot}`];
+            if (idS && idS !== 0) {
+                const cat = catalogo.get(idS);
+                sensoresMapeados[slot] = {
+                    slot,
+                    idSensor: idS,
+                    descricao: cat?.descricao ?? `(idSensor=${idS} fora do catálogo)`,
+                    tipoPorta: cat?.tipoPorta ?? '?'
+                };
+            }
+        }
+        return {
+            veiculo,
+            atuadores: atuadoresMapeados,
+            sensores: sensoresMapeados,
+            portaBloqueio: veiculo.portaBloqueio,
+            portaPanico: veiculo.portaPanico
+        };
+    }
+    /**
+     * Localiza um atuador no veículo pelo nome (busca tolerante por substring
+     * case-insensitive na descrição do catálogo) ou pelo slot direto.
+     *
+     * Casos especiais: "bloqueio" e "panico" são resolvidos via
+     * `portaBloqueio`/`portaPanico` (portas dedicadas que não aparecem no
+     * catálogo de atuadores). O `idAtuador` retornado nesses casos é `0`
+     * para sinalizar que não há entrada no catálogo, mas o `slot` reflete
+     * a porta correta.
+     *
+     * @example
+     * await client.findAtuador(2248181, 'sirene')
+     * // -> { slot: 2, idAtuador: 240, descricao: "Sirene", tipoPorta: "S" }
+     *
+     * await client.findAtuador(2248181, 'bloqueio')
+     * // -> { slot: 1, idAtuador: 0, descricao: "Bloqueio (porta dedicada)", tipoPorta: "S" }
+     *
+     * @returns o atuador encontrado ou `null` se nenhum bater.
+     */
+    async findAtuador(idVeiculo, descricaoOrSlot, opts) {
+        const map = await this.getMapeamentoVeiculo(idVeiculo, opts);
+        if (typeof descricaoOrSlot === 'number') {
+            return map.atuadores[descricaoOrSlot] ?? null;
+        }
+        const needle = descricaoOrSlot.toLowerCase().trim();
+        if (!needle)
+            return null;
+        // Casos especiais: portas dedicadas fora do catálogo
+        if (needle.includes('bloque') && map.portaBloqueio > 0) {
+            return {
+                slot: map.portaBloqueio,
+                idAtuador: 0,
+                descricao: 'Bloqueio (porta dedicada)',
+                tipoPorta: 'S'
+            };
+        }
+        if (needle.includes('panico') && map.portaPanico > 0) {
+            return {
+                slot: map.portaPanico,
+                idAtuador: 0,
+                descricao: 'Pânico (porta dedicada)',
+                tipoPorta: 'S'
+            };
+        }
+        for (const atuador of Object.values(map.atuadores)) {
+            if (atuador.descricao.toLowerCase().includes(needle))
+                return atuador;
+        }
+        return null;
     }
 }
 exports.SascarClient = SascarClient;
