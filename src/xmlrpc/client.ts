@@ -93,4 +93,46 @@ export class SascarXmlRpcClient {
   async reset_undo_alarme(idVeiculo: number): Promise<SascarXmlRpcCommandResult> {
     return this.toCommandResult(await this.send('reset_undo_alarme', [idVeiculo]));
   }
+
+  // ====== 2.5.4 ATUAÇÃO DE SAÍDAS ======
+  async atuador(
+    idVeiculo: number,
+    idsAtuadores: number[],
+    estado: 'on' | 'off'
+  ): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('atuador', [idVeiculo, idsAtuadores, estado]));
+  }
+
+  // ====== 2.5.5 ENVIO DE MENSAGEM DE TEXTO ======
+  async texto(
+    idVeiculo: number,
+    mensagem: string,
+    ticket?: number
+  ): Promise<SascarXmlRpcCommandResult> {
+    const params: SascarXmlRpcParam[] = [idVeiculo, mensagem];
+    if (ticket !== undefined) params.push(ticket);
+    return this.toCommandResult(await this.send('texto', params));
+  }
+
+  // ====== 2.5.6 TRANSMISSÃO COM IGNIÇÃO DESLIGADA ======
+  async transmissao_ignicao_desligada(
+    idVeiculo: number,
+    estado: 'on' | 'off'
+  ): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('transmissao_ignicao_desligada', [idVeiculo, estado]));
+  }
+
+  // ====== 2.5.14 INIBIÇÃO DE SENSORES ======
+  async inibir_sensor(
+    idVeiculo: number,
+    ids: number[],
+    acao: 0 | 1
+  ): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('inibir_sensor', [idVeiculo, ids, acao]));
+  }
+
+  // ====== 2.5.15 MODO SEGURO ======
+  async modoSeguro(idVeiculo: number, ativar: boolean): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('modoSeguro', [idVeiculo, ativar]));
+  }
 }

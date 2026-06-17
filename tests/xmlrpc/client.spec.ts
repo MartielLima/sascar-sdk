@@ -86,3 +86,70 @@ describe('SascarXmlRpcClient - bloqueio/desbloqueio/reset', () => {
     delete process.env.SASCAR_SENHA;
   });
 });
+
+describe('SascarXmlRpcClient - atuadores e mensagens', () => {
+  let client: SascarXmlRpcClient;
+  beforeEach(() => {
+    nock.cleanAll();
+    client = new SascarXmlRpcClient(
+      { usuario: 'test_user', senha: 'test_pass' },
+      { maxRetries: 1, timeoutMs: 1000 }
+    );
+  });
+  afterEach(() => nock.cleanAll());
+
+  const successStruct = `<member><name>2248181</name><value><int>1</int></value></member>
+  <member><name>ticketServidor</name><value><int>1</int></value></member>`;
+  const successBody = `<?xml version="1.0"?>
+<methodResponse><params><param><value><struct>${successStruct}</struct></value></param></params></methodResponse>`;
+
+  it('atuador() envia array de ids + estado on/off', async () => {
+    let body = '';
+    nock(URL).post(/.*/, (b) => { body = b; return true; }).reply(200, successBody);
+    await client.atuador(2248181, [240, 241], 'on');
+    expect(body).toContain('<methodName>atuador</methodName>');
+    expect(body).toContain('<value><int>240</int></value>');
+    expect(body).toContain('<value><int>241</int></value>');
+    expect(body).toContain('<value><string>on</string></value>');
+  });
+
+  it('texto() envia mensagem como string', async () => {
+    let body = '';
+    nock(URL).post(/.*/, (b) => { body = b; return true; }).reply(200, successBody);
+    await client.texto(2248181, 'Olá motorista');
+    expect(body).toContain('<methodName>texto</methodName>');
+    expect(body).toContain('<value><string>Olá motorista</string></value>');
+  });
+
+  it('texto() inclui ticket quando fornecido', async () => {
+    let body = '';
+    nock(URL).post(/.*/, (b) => { body = b; return true; }).reply(200, successBody);
+    await client.texto(2248181, 'msg', 99999);
+    expect(body).toContain('<value><int>99999</int></value>');
+  });
+
+  it('transmissao_ignicao_desligada() envia estado', async () => {
+    let body = '';
+    nock(URL).post(/.*/, (b) => { body = b; return true; }).reply(200, successBody);
+    await client.transmissao_ignicao_desligada(2248181, 'off');
+    expect(body).toContain('<methodName>transmissao_ignicao_desligada</methodName>');
+    expect(body).toContain('<value><string>off</string></value>');
+  });
+
+  it('inibir_sensor() envia array de ids + acao (0 ou 1)', async () => {
+    let body = '';
+    nock(URL).post(/.*/, (b) => { body = b; return true; }).reply(200, successBody);
+    await client.inibir_sensor(2248181, [231, 241, 248], 1);
+    expect(body).toContain('<methodName>inibir_sensor</methodName>');
+    expect(body).toContain('<value><int>231</int></value>');
+    expect(body).toContain('<value><int>1</int></value>');
+  });
+
+  it('modoSeguro() serializa ativar=true como <boolean>1</boolean>', async () => {
+    let body = '';
+    nock(URL).post(/.*/, (b) => { body = b; return true; }).reply(200, successBody);
+    await client.modoSeguro(2248181, true);
+    expect(body).toContain('<methodName>modoSeguro</methodName>');
+    expect(body).toContain('<value><boolean>1</boolean></value>');
+  });
+});
