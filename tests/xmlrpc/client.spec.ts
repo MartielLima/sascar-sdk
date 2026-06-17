@@ -273,3 +273,36 @@ describe('SascarXmlRpcClient - posicao e gerar_contra_senha', () => {
     expect(elapsed).toBeGreaterThanOrEqual(100);
   });
 });
+
+describe('SascarXmlRpcClient - status e listagem', () => {
+  let client: SascarXmlRpcClient;
+  beforeEach(() => {
+    nock.cleanAll();
+    client = new SascarXmlRpcClient({ usuario: 'test_user', senha: 'test_pass' }, { maxRetries: 1, timeoutMs: 1000 });
+  });
+  afterEach(() => nock.cleanAll());
+
+  it('status_ticket() retorna SascarComandoStatus[]', async () => {
+    nock(URL).post(/.*/).reply(200, `<?xml version="1.0"?>
+<methodResponse><params><param><value><array><data>
+  <value><struct>
+    <member><name>methodName</name><value><string>bloqueio</string></value></member>
+    <member><name>dataEnvio</name><value><string>06/17/2026 12:00</string></value></member>
+    <member><name>status</name><value><int>1</int></value></member>
+    <member><name>statusDescricao</name><value><string>COMANDO_EXECUTADO</string></value></member>
+    <member><name>ticketServidor</name><value><int>1</int></value></member>
+  </struct></value>
+</data></array></value></param></params></methodResponse>`);
+    const arr = await client.status_ticket(1, 1);
+    expect(arr).toHaveLength(1);
+    expect(arr[0].status).toBe(1);
+  });
+
+  it('listar_comandos() envia quantidade, dataInicial, dataFinal', async () => {
+    let body = '';
+    nock(URL).post(/.*/, (b) => { body = b; return true; }).reply(200, `<?xml version="1.0"?>
+<methodResponse><params><param><value><array><data></data></array></value></param></params></methodResponse>`);
+    await client.listar_comandos(2248181, 100, '06/01/2026 00:00', '06/17/2026 23:59');
+    expect(body).toContain('<methodName>listar_comandos</methodName>');
+  });
+});

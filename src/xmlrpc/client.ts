@@ -2,7 +2,7 @@ import { AsyncQueue } from '../queue';
 import { buildMethodCall } from './envelope';
 import { parseMethodResponse, type ParsedResponse } from './parser';
 import { sendXmlRpcRequest } from './transport';
-import { SASCAR_XMLRPC_URLS, type SascarXmlRpcCommandResult, type SascarXmlRpcParam, type SascarXmlRpcPosicaoResult, type SascarXmlRpcSenhaResult } from './types';
+import { SASCAR_XMLRPC_URLS, type SascarComandoEnviado, type SascarXmlRpcCommandResult, type SascarXmlRpcParam, type SascarXmlRpcPosicaoResult, type SascarXmlRpcSenhaResult } from './types';
 import type { SascarCredentials } from '../types';
 
 export interface SascarXmlRpcClientOptions {
@@ -170,5 +170,22 @@ export class SascarXmlRpcClient {
       throw new Error('Resposta de posicao() inválida (sem campos obrigatórios).');
     }
     return parsed.posicao;
+  }
+
+  // ====== 2.5.29 STATUS TICKET ======
+  async status_ticket(ticketConsulta: number, ticketInterno: number): Promise<SascarComandoEnviado[]> {
+    const parsed = await this.send('status_ticket', [ticketConsulta, ticketInterno]);
+    return parsed.comandos;
+  }
+
+  // ====== 2.5.7 LISTAGEM DE COMANDOS ENVIADOS ======
+  async listar_comandos(
+    idVeiculo: number,
+    quantidade: number,
+    dataInicial: string,
+    dataFinal: string
+  ): Promise<SascarComandoEnviado[]> {
+    const parsed = await this.send('listar_comandos', [idVeiculo, quantidade, dataInicial, dataFinal]);
+    return parsed.comandos;
   }
 }
