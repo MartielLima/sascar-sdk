@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<methodResponse>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member>
+            <name>2248181</name>
+            <value><int>1</int></value>
+          </member>
+          <member>
+            <name>ticketServidor</name>
+            <value><int>99999</int></value>
+          </member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodResponse>

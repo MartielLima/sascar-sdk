@@ -3,7 +3,7 @@
 SDK corporativo em TypeScript para integração com o Web Service SOAP da **SASCAR / Michelin ConnectedFleet (SasIntegra v2.07)**.
 Este documento lista **100% dos métodos e atributos** que podem ser consumidos da API através desta biblioteca.
 
-> **Status:** SDK auditado em 2026-06-09. Cobertura 100% do manual SasIntegra v2.07 (seções 4.1–4.63). 94 testes, 0 `any` em produção, erros tipados, timeout, retry, transport isolado.
+> **Status:** SDK auditado em 2026-06-17. Cobertura 100% do manual SasIntegra v2.07 SOAP (74 métodos) + 100% do manual XML-RPC v3.5 (34 comandos + 5 helpers). 200 testes, 0 `any` em produção, erros tipados, timeout, retry, transport isolado.
 
 ## Instalação
 
@@ -84,7 +84,7 @@ Veja `.env.example` no repositório.
 
 ## 📚 Referência Completa da API
 
-Abaixo estão listados todos os `74` métodos suportados pelo SDK (63 do manual SasIntegra v2.07 + 11 descobertos no WSDL ao vivo + 2 helpers de mapeamento).
+Abaixo estão listados todos os `108` métodos suportados pelo SDK (74 do manual SasIntegra v2.07 SOAP + 34 do manual XML-RPC v3.5 + 2 helpers de mapeamento do SOAP).
 _Clique no nome do método para expandir e visualizar todos os atributos de retorno e o exemplo de código._
 
 ### 🛠️ Cadastros e Entidades
@@ -3274,4 +3274,62 @@ Retorna `null` se nenhum atuador bater.
 
 </details>
 
-> ⚠ **Nota sobre comandos de bloqueio/sirene/buzzer:** o WS SasIntegra é **somente-leitura** para dados de frota. Não existem endpoints `bloquearVeiculo`, `acionarSirene` etc. no WSDL. Para enviar comandos reais ao veículo, é necessário usar um canal separado da Sascar (UI da plataforma ou API REST distinta). Os helpers acima resolvem **qual slot/porta** corresponde a cada comando — você usa essa informação no canal de comando que tem disponível.
+> ⚠ **Nota sobre comandos de bloqueio/sirene/buzzer:** os métodos acima do `SascarClient` (SOAP) são **somente-leitura** para dados de frota. Para enviar comandos reais (bloqueio, desbloqueio, sirene, atuadores, layouts), utilize o `SascarXmlRpcClient` documentado abaixo.
+
+## 🛰️ Comandos XML-RPC (bloqueio, atuadores, layouts)
+
+A partir da v1.1.0 o SDK também suporta os **34 comandos do protocolo XML-RPC** (manual Sascar v3.5), incluindo **bloqueio, desbloqueio, controle de atuadores, mensagens, layouts embarcados e AVD**. O protocolo XML-RPC é usado para **operações de escrita** (comandos) — diferente do SOAP, que cobre leituras.
+
+### Importação
+
+```typescript
+import { SascarXmlRpcClient } from 'sascar-sdk';
+
+const xmlrpc = new SascarXmlRpcClient({ usuario: 'user', senha: 'pass' });
+```
+
+### Bloquear/desbloquear veículo
+
+```typescript
+// Bloqueio simples
+const { ticketServidor } = await xmlrpc.bloquearVeiculo(2248181);
+
+// Aguardar execução (polling automático)
+const status = await xmlrpc.aguardarComando(ticketServidor, 2248181, {
+  timeoutMs: 60_000,
+  pollIntervalMs: 3_000
+});
+console.log(status.status === 1 ? 'Bloqueado!' : 'Recusado');
+
+// Desbloquear
+await xmlrpc.desbloquearVeiculo(2248181);
+```
+
+### Comandos disponíveis
+
+| Categoria | Métodos |
+|-----------|---------|
+| **Bloqueio** | `bloqueio`, `desbloqueio` |
+| **Posição & Atuadores** | `posicao`, `atuador`, `texto`, `transmissao_ignicao_desligada`, `modoSeguro`, `inibir_sensor` |
+| **Configuração** | `analise_satelital`, `relatorio_satelital`, `relatorio` |
+| **Senhas** | `gerar_contra_senha`, `gerar_contra_senha_mtc600` |
+| **Status** | `status_ticket`, `listar_comandos`, `reset_undo_alarme` |
+| **AVD** | `vincular_alerta_avd`, `desvincular_alerta_avd` |
+| **Operação** | `inicializar_operacao`, `finalizar_operacao`, `vincular_rota` |
+| **Layouts (embarcar)** | `embarcar_layout_acao_embarcada_avd`, `embarcar_layout_grupo_ponto`, `embarcar_motorista`, `embarcar_layout_tmcd`, `embarcar_layout_td40`, `embarcar_layout_td50`, `embarcar_sequenciamento_td50`, `embarcar_sequenciamento_macro_sasmdt`, `embarcar_layout_grupo_area_avd` |
+| **Layouts (desembarcar)** | `desembarcar_layout_acao_embarcada_avd`, `desembarcar_layout_grupo_ponto`, `desembarcar_layout_grupo_area_avd` |
+| **Helpers PT-BR** | `bloquearVeiculo`, `desbloquearVeiculo`, `enviarMensagem`, `alternarAtuador`, `aguardarComando` |
+
+### Endereços (do manual seção 2.3)
+
+- `https://xmlrpc.sascar.com.br/xmlrpc/comando` (bloqueio, atuador, posicao, etc.)
+- `https://xmlrpc.sascar.com.br/xmlrpc/operacao` (embarcar/desembarcar, operação, AVD)
+
+Para usar URLs customizadas (ex.: homologação), passe `comandoUrl` e `operacaoUrl` no segundo argumento:
+
+```typescript
+const xmlrpc = new SascarXmlRpcClient(
+  { usuario: 'user', senha: 'pass' },
+  { comandoUrl: 'https://hml-xmlrpc.sascar.com.br/xmlrpc/comando' }
+);
+```
