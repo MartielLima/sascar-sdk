@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<methodResponse>
+  <params>
+    <param>
+      <value>
+        <array>
+          <data>
+            <value>
+              <struct>
+                <member><name>methodName</name><value><string>bloqueio</string></value></member>
+                <member><name>dataEnvio</name><value><string>06/17/2026 12:00</string></value></member>
+                <member><name>status</name><value><int>1</int></value></member>
+                <member><name>statusDescricao</name><value><string>COMANDO_EXECUTADO</string></value></member>
+                <member><name>ticketServidor</name><value><int>12345</int></value></member>
+              </struct>
+            </value>
+          </data>
+        </array>
+      </value>
+    </param>
+  </params>
+</methodResponse>
