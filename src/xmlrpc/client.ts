@@ -2,7 +2,7 @@ import { AsyncQueue } from '../queue';
 import { buildMethodCall } from './envelope';
 import { parseMethodResponse, type ParsedResponse } from './parser';
 import { sendXmlRpcRequest } from './transport';
-import { SASCAR_XMLRPC_URLS, type SascarComandoEnviado, type SascarXmlRpcCommandResult, type SascarXmlRpcParam, type SascarXmlRpcPosicaoResult, type SascarXmlRpcSenhaResult } from './types';
+import { SASCAR_XMLRPC_URLS, type SascarComandoEnviado, type SascarXmlRpcCommandResult, type SascarXmlRpcOperacaoResult, type SascarXmlRpcParam, type SascarXmlRpcPosicaoResult, type SascarXmlRpcSenhaResult } from './types';
 import type { SascarCredentials } from '../types';
 
 export interface SascarXmlRpcClientOptions {
@@ -187,5 +187,33 @@ export class SascarXmlRpcClient {
   ): Promise<SascarComandoEnviado[]> {
     const parsed = await this.send('listar_comandos', [idVeiculo, quantidade, dataInicial, dataFinal]);
     return parsed.comandos;
+  }
+
+  // ====== 2.5.30 VINCULAR ALERTA AVD ======
+  async vincular_alerta_avd(idVeiculo: number, idAlertaAvd: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('vincular_alerta_avd', [idVeiculo, idAlertaAvd]));
+  }
+
+  // ====== 2.5.31 DESVINCULAR ALERTA AVD ======
+  async desvincular_alerta_avd(idVeiculo: number, idAlertaAvd: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('desvincular_alerta_avd', [idVeiculo, idAlertaAvd]));
+  }
+
+  // ====== 2.5.32 INICIALIZAR OPERAÇÃO ======
+  async inicializar_operacao(placas: string[]): Promise<SascarXmlRpcOperacaoResult> {
+    const parsed = await this.send('inicializar_operacao', [placas]);
+    return { ...this.toCommandResult(parsed), mensagens: parsed.mensagens };
+  }
+
+  // ====== 2.5.33 FINALIZAR OPERAÇÃO ======
+  async finalizar_operacao(placas: string[]): Promise<SascarXmlRpcOperacaoResult> {
+    const parsed = await this.send('finalizar_operacao', [placas]);
+    return { ...this.toCommandResult(parsed), mensagens: parsed.mensagens };
+  }
+
+  // ====== 2.5.34 VINCULAR ROTA ======
+  async vincular_rota(placas: string[], idRota: number): Promise<SascarXmlRpcOperacaoResult> {
+    const parsed = await this.send('vincular_rota', [placas, idRota]);
+    return { ...this.toCommandResult(parsed), mensagens: parsed.mensagens };
   }
 }

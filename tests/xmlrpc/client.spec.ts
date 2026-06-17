@@ -1,9 +1,10 @@
 import nock from 'nock';
 import { SascarXmlRpcClient } from '../../src/xmlrpc/client';
-import { SASCAR_XMLRPC_URLS } from '../../src/xmlrpc/types';
+import { SASCAR_XMLRPC_URLS as U } from '../../src/xmlrpc/types';
 import { assertXmlRpcBody } from '../integration/xmlrpc/_helpers';
 
-const URL = SASCAR_XMLRPC_URLS.comando;
+const URL = U.comando;
+const OPER_URL = U.operacao;
 
 describe('SascarXmlRpcClient - bloqueio/desbloqueio/reset', () => {
   let client: SascarXmlRpcClient;
@@ -304,5 +305,60 @@ describe('SascarXmlRpcClient - status e listagem', () => {
 <methodResponse><params><param><value><array><data></data></array></value></param></params></methodResponse>`);
     await client.listar_comandos(2248181, 100, '06/01/2026 00:00', '06/17/2026 23:59');
     expect(body).toContain('<methodName>listar_comandos</methodName>');
+  });
+});
+
+describe('SascarXmlRpcClient - AVD e Operação (endpoint /xmlrpc/operacao)', () => {
+  let client: SascarXmlRpcClient;
+  beforeEach(() => {
+    nock.cleanAll();
+    client = new SascarXmlRpcClient({ usuario: 'test_user', senha: 'test_pass' }, { maxRetries: 1, timeoutMs: 1000 });
+  });
+  afterEach(() => nock.cleanAll());
+
+  const ok = `<?xml version="1.0"?>
+<methodResponse><params><param><value><struct>
+  <member><name>2248181</name><value><int>1</int></value></member>
+  <member><name>ticketServidor</name><value><int>1</int></value></member>
+</struct></value></param></params></methodResponse>`;
+
+  it('vincular_alerta_avd() POSTa em /operacao', async () => {
+    let body = '';
+    nock(OPER_URL).post(/.*/, (b: string) => { body = b; return true; }).reply(200, ok);
+    await client.vincular_alerta_avd(2248181, 12345);
+    expect(body).toContain('<methodName>vincular_alerta_avd</methodName>');
+  });
+
+  it('desvincular_alerta_avd() POSTa em /operacao', async () => {
+    let body = '';
+    nock(OPER_URL).post(/.*/, (b: string) => { body = b; return true; }).reply(200, ok);
+    await client.desvincular_alerta_avd(2248181, 12345);
+    expect(body).toContain('<methodName>desvincular_alerta_avd</methodName>');
+  });
+
+  it('inicializar_operacao() envia array de placas e retorna mensagens', async () => {
+    nock(OPER_URL).post(/.*/).reply(200, `<?xml version="1.0"?>
+<methodResponse><params><param><value><struct>
+  <member><name>AAA1111</name><value><int>1</int></value></member>
+  <member><name>BBB2222</name><value><int>2</int></value></member>
+  <member><name>mensagens</name><value><struct>
+    <member><name>BBB2222</name><value><string>Veiculo nao pertence a gerenciadora</string></value></member>
+  </struct></value></member>
+</struct></value></param></params></methodResponse>`);
+    const r = await client.inicializar_operacao(['AAA1111', 'BBB2222']);
+    expect(r.mensagens.BBB2222).toContain('gerenciadora');
+  });
+
+  it('finalizar_operacao() é alias direto', async () => {
+    nock(OPER_URL).post(/.*/).reply(200, ok);
+    await client.finalizar_operacao(['AAA1111']);
+  });
+
+  it('vincular_rota() envia array de placas + idRota', async () => {
+    let body = '';
+    nock(OPER_URL).post(/.*/, (b: string) => { body = b; return true; }).reply(200, ok);
+    await client.vincular_rota(['AAA1111'], 99);
+    expect(body).toContain('<methodName>vincular_rota</methodName>');
+    expect(body).toContain('<value><int>99</int></value>');
   });
 });
