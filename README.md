@@ -3,7 +3,7 @@
 SDK corporativo em TypeScript para integração com o Web Service SOAP da **SASCAR / Michelin ConnectedFleet (SasIntegra v2.07)**.
 Este documento lista **100% dos métodos e atributos** que podem ser consumidos da API através desta biblioteca.
 
-> **Status:** SDK auditado em 2026-06-17. Cobertura 100% do manual SasIntegra v2.07 SOAP (74 métodos) + 100% do manual XML-RPC v3.5 (34 comandos + 5 helpers). 200 testes, 0 `any` em produção, erros tipados, timeout, retry, transport isolado.
+> **Status:** SDK auditado em 2026-06-17. Cobertura 100% do manual SasIntegra v2.07 SOAP (74 métodos) + 100% do manual XML-RPC v3.5 (34 comandos + 5 helpers). 343 testes, 0 `any` em produção, erros tipados, timeout, retry, transport isolado.
 
 ## Instalação
 
@@ -3280,6 +3280,8 @@ Retorna `null` se nenhum atuador bater.
 
 A partir da v1.1.0 o SDK também suporta os **34 comandos do protocolo XML-RPC** (manual Sascar v3.5), incluindo **bloqueio, desbloqueio, controle de atuadores, mensagens, layouts embarcados e AVD**. O protocolo XML-RPC é usado para **operações de escrita** (comandos) — diferente do SOAP, que cobre leituras.
 
+> 📌 **Importante (v1.1.1):** Todos os métodos do módulo XML-RPC foram testados em produção contra `xmlrpc.sascar.com.br`. O request format foi validado (manual seção 2.5). Para executar comandos é necessário que a **credencial tenha perfil "comandos remotos" habilitado pela Sascar** (vide [Permissões necessárias](#permissões-necessárias) abaixo).
+
 ### Importação
 
 ```typescript
@@ -3291,45 +3293,168 @@ const xmlrpc = new SascarXmlRpcClient({ usuario: 'user', senha: 'pass' });
 ### Bloquear/desbloquear veículo
 
 ```typescript
-// Bloqueio simples
-const { ticketServidor } = await xmlrpc.bloquearVeiculo(2248181);
+// Bloqueio simples (passa a PLACA, não o idVeiculo)
+const { ticketServidor, ticketCliente } = await xmlrpc.bloquearVeiculo('THF0G38');
 
 // Aguardar execução (polling automático)
-const status = await xmlrpc.aguardarComando(ticketServidor, 2248181, {
+const status = await xmlrpc.aguardarComando(ticketServidor, 'THF0G38', {
   timeoutMs: 60_000,
-  pollIntervalMs: 3_000
+  pollIntervalMs: 3_000,
+  ticketCliente
 });
-console.log(status.status === 1 ? 'Bloqueado!' : 'Recusado');
+console.log(status.status === 1 ? '✅ Bloqueado!' : '❌ Recusado');
 
 // Desbloquear
-await xmlrpc.desbloquearVeiculo(2248181);
+await xmlrpc.desbloquearVeiculo('THF0G38');
 ```
+
+> **Por que `placa` (string) e não `idVeiculo` (number)?** O manual v3.5 (seção 2.5) mostra os requests com `<member><name>placa</name><value><string>AAA0000</string></value></member>`. O servidor Sascar identifica o veículo pela **placa**, não pelo id numérico. (A v1.1.0 usava `idVeiculo: number` e foi corrigida na v1.1.1 após teste live.)
 
 ### Comandos disponíveis
 
+Todos os 34 métodos abaixo aceitam `placa: string` como primeiro parâmetro (não `idVeiculo`).
+
 | Categoria | Métodos |
 |-----------|---------|
-| **Bloqueio** | `bloqueio`, `desbloqueio` |
-| **Posição & Atuadores** | `posicao`, `atuador`, `texto`, `transmissao_ignicao_desligada`, `modoSeguro`, `inibir_sensor` |
-| **Configuração** | `analise_satelital`, `relatorio_satelital`, `relatorio` |
-| **Senhas** | `gerar_contra_senha`, `gerar_contra_senha_mtc600` |
-| **Status** | `status_ticket`, `listar_comandos`, `reset_undo_alarme` |
-| **AVD** | `vincular_alerta_avd`, `desvincular_alerta_avd` |
-| **Operação** | `inicializar_operacao`, `finalizar_operacao`, `vincular_rota` |
-| **Layouts (embarcar)** | `embarcar_layout_acao_embarcada_avd`, `embarcar_layout_grupo_ponto`, `embarcar_motorista`, `embarcar_layout_tmcd`, `embarcar_layout_td40`, `embarcar_layout_td50`, `embarcar_sequenciamento_td50`, `embarcar_sequenciamento_macro_sasmdt`, `embarcar_layout_grupo_area_avd` |
-| **Layouts (desembarcar)** | `desembarcar_layout_acao_embarcada_avd`, `desembarcar_layout_grupo_ponto`, `desembarcar_layout_grupo_area_avd` |
-| **Helpers PT-BR** | `bloquearVeiculo`, `desbloquearVeiculo`, `enviarMensagem`, `alternarAtuador`, `aguardarComando` |
+| **Bloqueio** | `bloqueio(placa)`, `desbloqueio(placa)` |
+| **Posição & Atuadores** | `posicao(placa)`, `atuador(placa, ids, on\|off)`, `texto(placa, msg, ticket?)`, `transmissao_ignicao_desligada(placa, on\|off)`, `modoSeguro(placa, ativar)`, `inibir_sensor(placa, ids, acao)` |
+| **Configuração** | `analise_satelital(placa, seg)`, `relatorio_satelital(placa, seg)`, `relatorio(placa, seg)` |
+| **Senhas** | `gerar_contra_senha(placa)`, `gerar_contra_senha_mtc600(placa)` |
+| **Status** | `status_ticket(ticketCliente, ticketServidor)`, `listar_comandos(placa, qtd, dataIni, dataFim)`, `reset_undo_alarme(placa)` |
+| **AVD** | `vincular_alerta_avd(placa, id)`, `desvincular_alerta_avd(placa, id)` |
+| **Operação** | `inicializar_operacao(placas[])`, `finalizar_operacao(placas[])`, `vincular_rota(placas[], idRota)` |
+| **Layouts (embarcar)** | `embarcar_layout_acao_embarcada_avd`, `embarcar_layout_grupo_ponto`, `embarcar_motorista`, `embarcar_layout_tmcd`, `embarcar_layout_td40`, `embarcar_layout_td50`, `embarcar_sequenciamento_td50`, `embarcar_sequenciamento_macro_sasmdt`, `embarcar_layout_grupo_area_avd` (todos `(placa, idLayout)`) |
+| **Layouts (desembarcar)** | `desembarcar_layout_acao_embarcada_avd`, `desembarcar_layout_grupo_ponto`, `desembarcar_layout_grupo_area_avd` (todos `(placa)`) |
+| **Helpers PT-BR** | `bloquearVeiculo(placa)`, `desbloquearVeiculo(placa)`, `enviarMensagem(placa, msg, ticket?)`, `alternarAtuador(placa, idAtuador, on\|off)`, `aguardarComando(ticketServidor, placa, opts?)` |
 
-### Endereços (do manual seção 2.3)
+### Modelo de resposta
 
-- `https://xmlrpc.sascar.com.br/xmlrpc/comando` (bloqueio, atuador, posicao, etc.)
-- `https://xmlrpc.sascar.com.br/xmlrpc/operacao` (embarcar/desembarcar, operação, AVD)
+```typescript
+interface SascarXmlRpcCommandResult {
+  ticketServidor: string;  // ticket gerado pelo servidor (consultar em status_ticket)
+  statusComando?: string;  // presente em modoSeguro
+  ticketCliente: number;   // ticket que o cliente gerou (0..2147483647)
+}
+```
 
-Para usar URLs customizadas (ex.: homologação), passe `comandoUrl` e `operacaoUrl` no segundo argumento:
+### Fluxo de polling (recomendado para comandos críticos)
+
+```typescript
+const { ticketServidor, ticketCliente } = await xmlrpc.bloqueio('THF0G38');
+
+// Opção 1: helper com polling automático (timeoutMs/pollIntervalMs customizáveis)
+const status = await xmlrpc.aguardarComando(ticketServidor, 'THF0G38', {
+  timeoutMs: 60_000,
+  pollIntervalMs: 5_000,
+  ticketCliente
+});
+
+// Opção 2: polling manual via XML-RPC
+const polls = await xmlrpc.status_ticket(ticketCliente, ticketServidor);
+
+// Opção 3: polling via SOAP obterStatusComando / obterStatusComandoTicketSascar
+import { SascarClient } from 'sascar-sdk';
+const soap = new SascarClient({ /* mesmas credenciais */ });
+const statusSoap = await soap.obterStatusComandoTicketSascar(parseInt(ticketServidor, 10));
+```
+
+### Endereços (manual seção 2.3)
+
+| URL | Usado por |
+|-----|-----------|
+| `https://xmlrpc.sascar.com.br/xmlrpc/enviar_comando` | Padrão — todos os comandos, **exceto** as 5 exceções abaixo |
+| `https://xmlrpc.sascar.com.br/xmlrpc/operacao` | Apenas: `vincular_alerta_avd`, `desvincular_alerta_avd`, `inicializar_operacao`, `finalizar_operacao`, `vincular_rota` (manual seções 2.5.30–2.5.34) |
+
+> **Atenção:** A URL `/xmlrpc/comando` mencionada em algumas referências da internet **NÃO existe** (retorna 404). O endpoint correto é `/xmlrpc/enviar_comando`.
+
+Para usar URLs customizadas (ex.: homologação), passe `enviarComandoUrl` e `operacaoUrl` no segundo argumento:
 
 ```typescript
 const xmlrpc = new SascarXmlRpcClient(
   { usuario: 'user', senha: 'pass' },
-  { comandoUrl: 'https://hml-xmlrpc.sascar.com.br/xmlrpc/comando' }
+  {
+    enviarComandoUrl: 'https://hml-xmlrpc.sascar.com.br/xmlrpc/enviar_comando',
+    operacaoUrl: 'https://hml-xmlrpc.sascar.com.br/xmlrpc/operacao'
+  }
 );
 ```
+
+### Códigos de retorno (manual seção 2.4.1)
+
+| `faultCode` | Mensagem | Causa |
+|---|---|---|
+| 1 | "Layout não encontrado" / "Erro ao executar comando" / etc. | Vários (vide manual 2.4.1) |
+| 4 | "Comando não suportado" | Equipamento do veículo tem restrição de envio |
+| **6** | **"Erro na autenticação"** | **Credencial não tem perfil XML-RPC habilitado** (solicitar à Sascar) |
+| 7 | "Veículo não disponível para esse login" | Veículo não está direcionado para a integração |
+| 8 | "Layout não preenchido" / "Quantidade inválida" / etc. | Parâmetros incorretos |
+
+Para erros de **comando executado com sucesso** (não fault), o servidor retorna:
+```xml
+<methodResponse>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>ticketServidor</name><value><string>12132678</string></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodResponse>
+```
+
+Códigos de status do comando (1=executado, 2=recusado, 3..7=pendente/erro) são retornados por `status_ticket` / `obterStatusComando`.
+
+## ⚠️ Permissões necessárias
+
+Diferente do `SascarClient` (SOAP) que funciona só com credenciais de leitura, o `SascarXmlRpcClient` exige que a **mesma credencial** tenha o **perfil de comandos remotos habilitado pela Sascar**. O próprio manual SASINTEGRA seção 4.9 confirma: *"Método para consultar a relação de comandos que o INTEGRADOR pode enviar via XML-RPC"*.
+
+### Como verificar se a sua credencial tem acesso
+
+```typescript
+// 1. SOAP: listar os tipos de comando
+import { SascarClient } from 'sascar-sdk';
+const soap = new SascarClient({ /* suas credenciais */ });
+try {
+  const tipos = await soap.obterTipoComando();
+  console.log('Acesso OK:', tipos.length, 'comandos disponíveis');
+} catch (e) {
+  if (e.message.includes('acesso nao permitido')) {
+    console.log('❌ Sem acesso a XML-RPC. Solicite à Sascar.');
+  }
+}
+
+// 2. XML-RPC: tentar enviar um desbloqueio (não destrutivo se o veículo já estiver desbloqueado)
+import { SascarXmlRpcClient } from 'sascar-sdk';
+const xmlrpc = new SascarXmlRpcClient({ /* mesmas credenciais */ });
+try {
+  await xmlrpc.desbloqueio('THF0G38');
+} catch (e) {
+  if (e.message.includes('faultCode') || e.message.includes('6')) {
+    console.log('❌ Sem acesso a XML-RPC:', e.message);
+  }
+}
+```
+
+### O que fazer se a credencial não tem acesso
+
+Ligue para a **central de relacionamento Sascar (0800 648 6004 / 4002 6004)** e solicite:
+
+> "Habilitar perfil de **comandos remotos XML-RPC** para a gerenciadora `<seu_usuario>`. Atualmente só temos acesso a leitura (obterVeiculos)."
+
+A SDK funciona **imediatamente** após a liberação — nenhum código precisa mudar.
+
+## 📌 Por que **não** existe método SOAP para bloqueio/desbloqueio
+
+A primeira intuição de quem começa a integrar é procurar `bloqueioVeiculo` ou similar no manual SOAP. **Não existe.** Verificação feita em 2026-06-17 sobre o manual SasIntegra v2.07 (290 páginas):
+
+- Seção 4.7 e 4.8 (`obterStatusComando` / `obterStatusComandoTicketSascar`) — apenas **consulta** o status de comandos XML-RPC já enviados
+- Seção 4.9 (`obterTipoComando`) — apenas **cataloga** os comandos disponíveis via XML-RPC
+- Seção 4.41 (`comandoEmbarquePontoDiario`) — único método SOAP que envia comando, mas é **específico** para embarque de pontos de referência, não para bloqueio/sirene/atuador
+
+O manual 4.9 explicita: *"comandos que o INTEGRADOR pode enviar via XML-RPC"*. Toda escrita de comando é via XML-RPC, sem exceção. A v1.1.0+ do SDK preenche esse gap.
+
+## 🛠️ Helpers de mapeamento de veículo (SOAP, v1.0+)
+
+> ⚠ **Nota sobre comandos de bloqueio/sirene/buzzer:** os métodos acima do `SascarClient` (SOAP) são **somente-leitura** para dados de frota. Para enviar comandos reais (bloqueio, desbloqueio, sirene, atuadores, layouts), utilize o `SascarXmlRpcClient` documentado abaixo.

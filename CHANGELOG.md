@@ -6,6 +6,17 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [1.1.1] - 2026-06-17
 
+### Documentado
+
+- **README**: seção "Comandos XML-RPC" reescrita com base no teste live. Agora inclui:
+  - Aviso sobre o perfil de permissões necessário (`Permissões necessárias`)
+  - Procedimento para verificar se a credencial tem acesso (`obterTipoComando` via SOAP)
+  - Tabela de faultCodes do XML-RPC (manual 2.4.1) com causa de cada um
+  - Seção "Por que não existe método SOAP para bloqueio" com referência ao manual 4.9
+  - Correção da URL `/xmlrpc/comando` → `/xmlrpc/enviar_comando` (era 404)
+  - Tabela atualizada de assinaturas: todos os métodos agora `placa: string` (não `idVeiculo: number`)
+  - Contador de testes atualizado: 200 → 343
+
 ### Corrigido (BUGS CRÍTICOS ENCONTRADOS EM TESTE LIVE)
 
 A v1.1.0 tinha 3 bugs críticos descobertos ao testar contra o servidor real da Sascar. Todos corrigidos:

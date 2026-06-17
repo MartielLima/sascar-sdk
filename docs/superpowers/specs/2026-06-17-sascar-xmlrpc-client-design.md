@@ -87,7 +87,7 @@ src/
 
 | Endpoint | Usado por |
 |----------|-----------|
-| `https://xmlrpc.sascar.com.br/xmlrpc/comando` | `posicao`, `bloqueio`, `desbloqueio`, `atuador`, `texto`, `transmissao_ignicao_desligada`, `gerar_contra_senha`, `gerar_contra_senha_mtc600`, `reset_undo_alarme`, `modoSeguro`, `inibir_sensor`, `analise_satelital`, `relatorio_satelital`, `relatorio`, `listar_comandos`, `status_ticket` |
+| `https://xmlrpc.sascar.com.br/xmlrpc/enviar_comando` | `posicao`, `bloqueio`, `desbloqueio`, `atuador`, `texto`, `transmissao_ignicao_desligada`, `gerar_contra_senha`, `gerar_contra_senha_mtc600`, `reset_undo_alarme`, `modoSeguro`, `inibir_sensor`, `analise_satelital`, `relatorio_satelital`, `relatorio`, `listar_comandos`, `status_ticket` (padrão — manual seção 2.3) |
 | `https://xmlrpc.sascar.com.br/xmlrpc/operacao` | `inicializar_operacao`, `finalizar_operacao`, `vincular_rota`, `vincular_alerta_avd`, `desvincular_alerta_avd`, todos os `embarcar_*` e `desembarcar_*` |
 
 A configuração de URL é exposta via `SascarXmlRpcClientOptions.comandoUrl`
@@ -114,13 +114,13 @@ export class SascarXmlRpcClient {
 ### Helpers de alto nível (5)
 
 ```typescript
-bloquearVeiculo(idVeiculo: number): Promise<XmlRpcCommandResult>;
-desbloquearVeiculo(idVeiculo: number): Promise<XmlRpcCommandResult>;
-enviarMensagem(idVeiculo: number, mensagem: string, ticket?: number): Promise<XmlRpcCommandResult>;
-alternarAtuador(idVeiculo: number, idAtuador: number, estado: 'on' | 'off'): Promise<XmlRpcCommandResult>;
+bloquearVeiculo(placa: string): Promise<XmlRpcCommandResult>;
+desbloquearVeiculo(placa: string): Promise<XmlRpcCommandResult>;
+enviarMensagem(placa: string, mensagem: string, ticket?: number): Promise<XmlRpcCommandResult>;
+alternarAtuador(placa: string, idAtuador: number, estado: 'on' | 'off'): Promise<XmlRpcCommandResult>;
 aguardarComando(
   ticket: number,
-  idVeiculo: number,
+  placa: string,
   opts?: { timeoutMs?: number; pollIntervalMs?: number }
 ): Promise<ComandoStatusFinal>;
 ```
@@ -171,7 +171,7 @@ export interface XmlRpcOperacaoResult extends XmlRpcCommandResult {
 
 // posicao()
 export interface XmlRpcPosicaoResult {
-  idVeiculo: number;
+  placa: string;
   dataPosicao: string;
   dataPacote: string;
   latitude: number;
@@ -321,7 +321,17 @@ await xmlrpc.atuador(2248181, [240], 'off');
 | URLs Sascar mudam | URLs expostas em `SascarXmlRpcClientOptions` para override |
 | Comportamento de polling do `status_ticket` (status 3/4/5/6/7) | `aguardarComando` considera sucesso apenas status 1; recusa em 2; timeout para os demais (configurável) |
 | Mutex em `posicao` quebra paralelismo de outros comandos | Mutex opcional via `positionMutex: false`; default true conforme manual |
-| Credenciais do SOAP não funcionarem no XML-RPC | Documentado no README que Sascar confirma mesmas credenciais; permite override com `XmlRpcCredentials` (futuro) |
+| **Credenciais do SOAP não funcionarem no XML-RPC (CONFIRMADO em teste live 2026-06-17)** | A SDK está correta. O servidor retorna `faultCode 6: Erro na autenticacao` quando a gerenciadora não tem perfil "comandos remotos". Usuário precisa solicitar à Sascar (vide README seção "Permissões necessárias"). Verificar com `obterTipoComando` antes de tentar. |
+
+## Validação em produção (2026-06-17)
+
+Após a v1.1.0, foi feito teste live contra `https://xmlrpc.sascar.com.br`. **Três bugs críticos** foram encontrados e corrigidos na v1.1.1:
+
+1. **URL errada**: `/xmlrpc/comando` retornava 404. Manual seção 2.3 diz `/xmlrpc/enviar_comando`. ✅ Corrigido.
+2. **Tipo errado**: métodos usavam `idVeiculo: number` mas servidor espera `placa: string`. ✅ Corrigido (todas 34+5 assinaturas).
+3. **Membro `<name>ticket</name>` ausente**: server rejeitava com "Ticket Inválido". ✅ Adicionado: SDK auto-gera ticket 0..2147483647 e o envia como named param.
+
+Após a v1.1.1, o request é aceito pelo servidor. A falha de `faultCode 6` em seguida é conta, não código. A SDK funciona imediatamente após a Sascar habilitar o perfil XML-RPC.
 
 ## Critérios de "pronto"
 
