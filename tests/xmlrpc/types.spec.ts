@@ -1,16 +1,16 @@
 import type {
-  XmlRpcCommandResult,
-  XmlRpcOperacaoResult,
-  XmlRpcPosicaoResult,
-  XmlRpcSenhaResult,
-  ComandoEnviado,
-  ComandoStatus,
-  ComandoStatusFinal
+  SascarXmlRpcCommandResult,
+  SascarXmlRpcOperacaoResult,
+  SascarXmlRpcPosicaoResult,
+  SascarXmlRpcSenhaResult,
+  SascarComandoEnviado,
+  SascarComandoStatus,
+  SascarComandoStatusFinal
 } from '../../src/xmlrpc/types';
 
 describe('xmlrpc types - shape compile-time', () => {
-  it('XmlRpcCommandResult aceita os campos obrigatórios', () => {
-    const r: XmlRpcCommandResult = {
+  it('SascarXmlRpcCommandResult aceita os campos obrigatórios', () => {
+    const r: SascarXmlRpcCommandResult = {
       resultados: { 2248181: '1' },
       ticketServidor: 12345,
       placasProcessadas: ['ABC1D23']
@@ -19,8 +19,8 @@ describe('xmlrpc types - shape compile-time', () => {
     expect(r.resultados[2248181]).toBe('1');
   });
 
-  it('XmlRpcOperacaoResult estende CommandResult com mensagens', () => {
-    const r: XmlRpcOperacaoResult = {
+  it('SascarXmlRpcOperacaoResult estende CommandResult com mensagens', () => {
+    const r: SascarXmlRpcOperacaoResult = {
       resultados: { 1: '2' },
       ticketServidor: 99,
       placasProcessadas: ['AAA1111'],
@@ -29,8 +29,8 @@ describe('xmlrpc types - shape compile-time', () => {
     expect(r.mensagens.AAA1111).toContain('gerenciadora');
   });
 
-  it('XmlRpcPosicaoResult aceita campos variáveis em extras', () => {
-    const r: XmlRpcPosicaoResult = {
+  it('SascarXmlRpcPosicaoResult aceita campos variáveis em extras', () => {
+    const r: SascarXmlRpcPosicaoResult = {
       idVeiculo: 2248181,
       dataPosicao: '2026-06-17 12:00:00',
       dataPacote: '2026-06-17 12:00:00',
@@ -44,8 +44,8 @@ describe('xmlrpc types - shape compile-time', () => {
     expect(r.extras.saida1).toBe(240);
   });
 
-  it('XmlRpcSenhaResult estende CommandResult com senha', () => {
-    const r: XmlRpcSenhaResult = {
+  it('SascarXmlRpcSenhaResult estende CommandResult com senha', () => {
+    const r: SascarXmlRpcSenhaResult = {
       resultados: {},
       ticketServidor: 0,
       placasProcessadas: [],
@@ -54,8 +54,8 @@ describe('xmlrpc types - shape compile-time', () => {
     expect(r.senha).toHaveLength(6);
   });
 
-  it('ComandoEnviado tem todos os campos', () => {
-    const c: ComandoEnviado = {
+  it('SascarComandoEnviado tem todos os campos', () => {
+    const c: SascarComandoEnviado = {
       dataEnvio: '06/17/2026 12:00',
       methodName: 'bloqueio',
       parametros: { placa: 'ABC1D23' },
@@ -66,8 +66,8 @@ describe('xmlrpc types - shape compile-time', () => {
     expect(c.statusDescricao).toBe('COMANDO_EXECUTADO');
   });
 
-  it('ComandoStatus permite mensagem opcional', () => {
-    const s: ComandoStatus = {
+  it('SascarComandoStatus permite mensagem opcional', () => {
+    const s: SascarComandoStatus = {
       ticket: 1,
       dataExecucao: '06/17/2026 12:00',
       status: 2,
@@ -77,8 +77,8 @@ describe('xmlrpc types - shape compile-time', () => {
     expect(s.mensagem).toBe('falhou');
   });
 
-  it('ComandoStatusFinal aceita apenas status 1 ou 2', () => {
-    const ok: ComandoStatusFinal = {
+  it('SascarComandoStatusFinal aceita apenas status 1 ou 2', () => {
+    const ok: SascarComandoStatusFinal = {
       ticket: 1,
       status: 1,
       statusDescricao: 'COMANDO_EXECUTADO',
@@ -87,7 +87,7 @@ describe('xmlrpc types - shape compile-time', () => {
     };
     expect(ok.status).toBe(1);
 
-    const fail: ComandoStatusFinal = {
+    const fail: SascarComandoStatusFinal = {
       ticket: 1,
       status: 2,
       statusDescricao: 'COMANDO_RECUSADO',
