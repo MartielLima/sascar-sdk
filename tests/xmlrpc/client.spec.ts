@@ -362,3 +362,56 @@ describe('SascarXmlRpcClient - AVD e Operação (endpoint /xmlrpc/operacao)', ()
     expect(body).toContain('<value><int>99</int></value>');
   });
 });
+
+describe('SascarXmlRpcClient - embarcar/desembarcar layouts', () => {
+  let client: SascarXmlRpcClient;
+
+  beforeEach(() => {
+    nock.cleanAll();
+    client = new SascarXmlRpcClient({ usuario: 'test_user', senha: 'test_pass' }, { maxRetries: 1, timeoutMs: 1000 });
+  });
+  afterEach(() => nock.cleanAll());
+
+  const ok = `<?xml version="1.0"?>
+<methodResponse><params><param><value><struct>
+  <member><name>2248181</name><value><int>1</int></value></member>
+  <member><name>ticketServidor</name><value><int>1</int></value></member>
+</struct></value></param></params></methodResponse>`;
+
+  const embarcarMethods = [
+    'embarcar_layout_acao_embarcada_avd',
+    'embarcar_layout_grupo_ponto',
+    'embarcar_motorista',
+    'embarcar_layout_tmcd',
+    'embarcar_layout_td40',
+    'embarcar_layout_td50',
+    'embarcar_sequenciamento_td50',
+    'embarcar_sequenciamento_macro_sasmdt',
+    'embarcar_layout_grupo_area_avd'
+  ];
+
+  const desembarcarMethods = [
+    'desembarcar_layout_acao_embarcada_avd',
+    'desembarcar_layout_grupo_ponto',
+    'desembarcar_layout_grupo_area_avd'
+  ];
+
+  embarcarMethods.forEach((m) => {
+    it(`${m}() POSTa em /operacao com idLayout`, async () => {
+      let body = '';
+      nock(OPER_URL).post(/.*/, (b: string) => { body = b; return true; }).reply(200, ok);
+      await (client as unknown as Record<string, (a: number, b: number) => Promise<unknown>>)[m](2248181, 42);
+      expect(body).toContain(`<methodName>${m}</methodName>`);
+      expect(body).toContain('<value><int>42</int></value>');
+    });
+  });
+
+  desembarcarMethods.forEach((m) => {
+    it(`${m}() POSTa em /operacao`, async () => {
+      let body = '';
+      nock(OPER_URL).post(/.*/, (b: string) => { body = b; return true; }).reply(200, ok);
+      await (client as unknown as Record<string, (a: number) => Promise<unknown>>)[m](2248181);
+      expect(body).toContain(`<methodName>${m}</methodName>`);
+    });
+  });
+});

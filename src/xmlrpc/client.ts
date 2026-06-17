@@ -216,4 +216,44 @@ export class SascarXmlRpcClient {
     const parsed = await this.send('vincular_rota', [placas, idRota]);
     return { ...this.toCommandResult(parsed), mensagens: parsed.mensagens };
   }
+
+  // ====== 2.5.16–2.5.27 EMBARCAR LAYOUTS ======
+  async embarcar_layout_acao_embarcada_avd(idVeiculo: number, idLayout: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('embarcar_layout_acao_embarcada_avd', [idVeiculo, idLayout]));
+  }
+  async embarcar_layout_grupo_ponto(idVeiculo: number, idLayout: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('embarcar_layout_grupo_ponto', [idVeiculo, idLayout]));
+  }
+  async embarcar_motorista(idVeiculo: number, idMotorista: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('embarcar_motorista', [idVeiculo, idMotorista]));
+  }
+  async embarcar_layout_tmcd(idVeiculo: number, idLayout: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('embarcar_layout_tmcd', [idVeiculo, idLayout]));
+  }
+  async embarcar_layout_td40(idVeiculo: number, idLayout: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('embarcar_layout_td40', [idVeiculo, idLayout]));
+  }
+  async embarcar_layout_td50(idVeiculo: number, idLayout: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('embarcar_layout_td50', [idVeiculo, idLayout]));
+  }
+  async embarcar_sequenciamento_td50(idVeiculo: number, idLayout: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('embarcar_sequenciamento_td50', [idVeiculo, idLayout]));
+  }
+  async embarcar_sequenciamento_macro_sasmdt(idVeiculo: number, idLayout: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('embarcar_sequenciamento_macro_sasmdt', [idVeiculo, idLayout]));
+  }
+  async embarcar_layout_grupo_area_avd(idVeiculo: number, idLayout: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('embarcar_layout_grupo_area_avd', [idVeiculo, idLayout]));
+  }
+
+  // ====== 2.5.17/19/28 DESEMBARCAR LAYOUTS ======
+  async desembarcar_layout_acao_embarcada_avd(idVeiculo: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('desembarcar_layout_acao_embarcada_avd', [idVeiculo]));
+  }
+  async desembarcar_layout_grupo_ponto(idVeiculo: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('desembarcar_layout_grupo_ponto', [idVeiculo]));
+  }
+  async desembarcar_layout_grupo_area_avd(idVeiculo: number): Promise<SascarXmlRpcCommandResult> {
+    return this.toCommandResult(await this.send('desembarcar_layout_grupo_area_avd', [idVeiculo]));
+  }
 }
