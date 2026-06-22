@@ -459,13 +459,13 @@ export class SascarClient {
   }
 
   async obterDeltaTelemetriaIntegracaoInercia(
-    dataInicial: string,
+    dataInicio: string,
     dataFinal: string,
     idVeiculo: number,
     pagina?: number
   ): Promise<T.DeltaTelemetria[]> {
     return this.request<T.DeltaTelemetria[]>('obterDeltaTelemetriaIntegracaoInercia', {
-      dataInicial,
+      dataInicio,
       dataFinal,
       idVeiculo,
       deltmPagina: pagina
@@ -525,14 +525,14 @@ export class SascarClient {
   async obterEventosTempoDirecao(
     quantidade = 3000,
     idMotorista?: number,
-    dataInicial?: string,
-    dataFinal?: string
+    dataInicio?: string,
+    dataFim?: string
   ): Promise<T.EventoTempoDirecao[]> {
     return this.request<T.EventoTempoDirecao[]>('obterEventosTempoDirecao', {
       quantidade,
       idMotorista,
-      dataInicial,
-      dataFinal
+      dataInicio,
+      dataFim
     });
   }
 

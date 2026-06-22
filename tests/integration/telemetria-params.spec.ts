@@ -14,7 +14,7 @@ import { WSDL_URL } from './_helpers';
 describe('Telemetria — nomes de parâmetros SOAP (body assertion)', () => {
   afterEach(() => nock.cleanAll());
 
-  it('obterDeltaTelemetriaIntegracaoInercia envia dataInicial (com L), não dataInicio', async () => {
+  it('obterDeltaTelemetriaIntegracaoInercia envia dataInicio (sem L) conforme WSDL', async () => {
     let capturedBody: string | undefined;
     const scope = nock(WSDL_URL)
       .post(/.*/, (body: string) => {
@@ -42,15 +42,15 @@ describe('Telemetria — nomes de parâmetros SOAP (body assertion)', () => {
     await client.obterDeltaTelemetriaIntegracaoInercia('2026-06-01', '2026-06-22', 12345, 10);
     expect(scope.isDone()).toBe(true);
     expect(capturedBody).toBeDefined();
-    // Deve usar dataInicial (com L) — bug histórico do SDK
-    expect(capturedBody!).toContain('<dataInicial>2026-06-01</dataInicial>');
+    // WSDL SasIntegra v2.07 declara 'dataInicio' (sem L) — NÃO 'dataInicial'
+    expect(capturedBody!).toContain('<dataInicio>2026-06-01</dataInicio>');
     expect(capturedBody!).toContain('<dataFinal>2026-06-22</dataFinal>');
     expect(capturedBody!).toContain('<idVeiculo>12345</idVeiculo>');
-    // Não deve enviar dataInicio (sem L) — esse é o nome errado
-    expect(capturedBody!).not.toContain('<dataInicio>');
+    // Não enviar dataInicial (com L) — esse é o nome ERRADO
+    expect(capturedBody!).not.toContain('<dataInicial>');
   });
 
-  it('obterEventosTempoDirecao envia dataInicial (com L), não dataInicio', async () => {
+  it('obterEventosTempoDirecao envia dataInicio/dataFim (sem L) conforme WSDL', async () => {
     let capturedBody: string | undefined;
     const scope = nock(WSDL_URL)
       .post(/.*/, (body: string) => {
@@ -78,11 +78,12 @@ describe('Telemetria — nomes de parâmetros SOAP (body assertion)', () => {
     await client.obterEventosTempoDirecao(100, 5, '2026-06-01', '2026-06-22');
     expect(scope.isDone()).toBe(true);
     expect(capturedBody).toBeDefined();
-    // Deve usar dataInicial (com L) — bug histórico do SDK
-    expect(capturedBody!).toContain('<dataInicial>2026-06-01</dataInicial>');
-    expect(capturedBody!).toContain('<dataFinal>2026-06-22</dataFinal>');
+    // WSDL SasIntegra v2.07 declara 'dataInicio'/'dataFim' (sem L)
+    expect(capturedBody!).toContain('<dataInicio>2026-06-01</dataInicio>');
+    expect(capturedBody!).toContain('<dataFim>2026-06-22</dataFim>');
     expect(capturedBody!).toContain('<quantidade>100</quantidade>');
-    // Não deve enviar dataInicio (sem L) — esse é o nome errado
-    expect(capturedBody!).not.toContain('<dataInicio>');
+    // Não enviar dataInicial/dataFinal (com L) — esses são os nomes ERRADOS
+    expect(capturedBody!).not.toContain('<dataInicial>');
+    expect(capturedBody!).not.toContain('<dataFinal>');
   });
 });

@@ -113,12 +113,12 @@ export declare class SascarClient {
      * @deprecated Descontinuado. Use obterDeltaTelemetriaIntegracaoInercia
      */
     obterDeltaTelemetriaIntegracao(dataInicio: string, dataFinal: string, idVeiculo: number, pagina?: number): Promise<T.DeltaTelemetria[]>;
-    obterDeltaTelemetriaIntegracaoInercia(dataInicial: string, dataFinal: string, idVeiculo: number, pagina?: number): Promise<T.DeltaTelemetria[]>;
+    obterDeltaTelemetriaIntegracaoInercia(dataInicio: string, dataFinal: string, idVeiculo: number, pagina?: number): Promise<T.DeltaTelemetria[]>;
     obterDeltaTelemetriaIntegracaoDataChegada(dataInicio: string, dataFinal: string, idVeiculo: number, dataChegadaInicio: string, dataChegadaFinal: string): Promise<T.DeltaTelemetria[]>;
     obterDeltaTelemetriaIntegracaoInerciaDataChegada(dataInicio: string, dataFinal: string, idVeiculo: number, dataChegadaInicio: string, dataChegadaFinal: string): Promise<T.DeltaTelemetria[]>;
     obterEventoTelemetriaIntegracao(dataInicio: string, dataFinal: string, idVeiculo: number, idEventoList?: string): Promise<T.EventoTelemetria[]>;
     obterEventoTelemetriaDescricao(): Promise<T.TipoEventoTelemetriaDescricao[]>;
-    obterEventosTempoDirecao(quantidade?: number, idMotorista?: number, dataInicial?: string, dataFinal?: string): Promise<T.EventoTempoDirecao[]>;
+    obterEventosTempoDirecao(quantidade?: number, idMotorista?: number, dataInicio?: string, dataFim?: string): Promise<T.EventoTempoDirecao[]>;
     obterEventosTempoDirecaoDataChegada(quantidade?: number, idMotorista?: number, dataInicio?: string, dataFim?: string, dataChegadaInicial?: string, dataChegadaFinal?: string): Promise<T.EventoTempoDirecao[]>;
     /**
      * @deprecated Método desativado sem previsão de liberação pela Sascar.
