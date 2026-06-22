@@ -311,9 +311,9 @@ class SascarClient {
             deltmPagina: pagina
         });
     }
-    async obterDeltaTelemetriaIntegracaoInercia(dataInicio, dataFinal, idVeiculo, pagina) {
+    async obterDeltaTelemetriaIntegracaoInercia(dataInicial, dataFinal, idVeiculo, pagina) {
         return this.request('obterDeltaTelemetriaIntegracaoInercia', {
-            dataInicio,
+            dataInicial,
             dataFinal,
             idVeiculo,
             deltmPagina: pagina
@@ -348,12 +348,12 @@ class SascarClient {
     async obterEventoTelemetriaDescricao() {
         return this.request('obterEventoTelemetriaDescricao');
     }
-    async obterEventosTempoDirecao(quantidade = 3000, idMotorista, dataInicio, dataFim) {
+    async obterEventosTempoDirecao(quantidade = 3000, idMotorista, dataInicial, dataFinal) {
         return this.request('obterEventosTempoDirecao', {
             quantidade,
             idMotorista,
-            dataInicio,
-            dataFim
+            dataInicial,
+            dataFinal
         });
     }
     async obterEventosTempoDirecaoDataChegada(quantidade = 3000, idMotorista, dataInicio, dataFim, dataChegadaInicial, dataChegadaFinal) {
